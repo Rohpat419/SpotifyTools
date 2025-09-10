@@ -1,0 +1,17 @@
+README.md
+pyproject.toml
+src/spotify_tools/__init__.py
+src/spotify_tools/client.py
+src/spotify_tools/config.py
+src/spotify_tools/duplicates.py
+src/spotify_tools/explicit.py
+src/spotify_tools/normalize.py
+src/spotify_tools/tops.py
+src/spotify_tools/use_cli.py
+src/spotify_tools.egg-info/PKG-INFO
+src/spotify_tools.egg-info/SOURCES.txt
+src/spotify_tools.egg-info/dependency_links.txt
+src/spotify_tools.egg-info/top_level.txt
+src/spotify_tools/auth/get_user_token.py
+tests/test_duplicates.py
+tests/test_normalize.py
