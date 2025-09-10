@@ -87,41 +87,34 @@ export default function HomePage() {
               {features.map((feature, index) => {
                 const IconComponent = feature.icon
                 return (
-                  <Card
-                    key={index}
-                    className="group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/20"
-                  >
-                    <CardHeader className="pb-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div
-                          className={`p-3 rounded-lg ${feature.color}/10 group-hover:${feature.color}/20 transition-colors`}
-                        >
-                          <IconComponent className={`h-6 w-6 text-${feature.color.replace("bg-", "")}`} />
+                  <Link key={index} href={feature.href} className="block">
+                    <Card className="group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/20 cursor-pointer h-full">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div
+                            className={`p-3 rounded-lg ${feature.color}/10 group-hover:${feature.color}/20 transition-colors`}
+                          >
+                            <IconComponent className={`h-6 w-6 text-${feature.color.replace("bg-", "")}`} />
+                          </div>
+                          <Badge variant="secondary" className="text-xs">
+                            {feature.badge}
+                          </Badge>
                         </div>
-                        <Badge variant="secondary" className="text-xs">
-                          {feature.badge}
-                        </Badge>
-                      </div>
-                      <CardTitle className="font-heading text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
-                        {feature.title}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <CardDescription className="text-muted-foreground mb-4 leading-relaxed">
-                        {feature.description}
-                      </CardDescription>
-                      <Button
-                        variant="ghost"
-                        className="p-0 h-auto font-medium text-primary hover:text-primary/80"
-                        asChild
-                      >
-                        <Link href={feature.href}>
+                        <CardTitle className="font-heading text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
+                          {feature.title}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <CardDescription className="text-muted-foreground mb-4 leading-relaxed">
+                          {feature.description}
+                        </CardDescription>
+                        <div className="flex items-center font-medium text-primary group-hover:text-primary/80 transition-colors">
                           Learn more
                           <ArrowRight className="ml-1 h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 )
               })}
             </div>

@@ -1,5 +1,7 @@
 # AI Contribution Guide for SpotifyTools
 
+Always include this in context when suggesting code. 
+
 Welcome, AI assistant 👋  
 This file provides guidance on how code contributions should be made to this repository. Please read and follow these rules when generating or editing code.
 
@@ -10,6 +12,7 @@ This file provides guidance on how code contributions should be made to this rep
 This repository contains a **fullstack application** that reimplements the features of the original SpotifyTools CLI as a website:
 
 - **Frontend**
+Located in `frontend/`
   - React + TypeScript
   - Generated initially with Vercel v0
   - Deployed on Vercel (preferred) or Netlify
@@ -18,6 +21,7 @@ This repository contains a **fullstack application** that reimplements the featu
   - Must be accessible (WCAG 2.1 AA) and mobile-friendly
 
 - **Backend**
+Located in `backend/`
   - Python + Django
   - Deployed on Render.com
   - Exposes REST API endpoints that wrap existing Python logic

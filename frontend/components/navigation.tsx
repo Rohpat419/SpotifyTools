@@ -72,7 +72,12 @@ export function Navigation() {
                 <Link key={item.href} href={item.href}>
                   <Button
                     variant={isActive ? "secondary" : "ghost"}
-                    className={cn("flex items-center space-x-2 h-9 px-3", isActive && "bg-muted font-medium")}
+                    className={cn(
+                      "flex items-center space-x-2 h-9 px-3 transition-all",
+                      isActive
+                        ? "bg-muted text-foreground font-medium border-l-2 border-l-primary"
+                        : "hover:bg-muted/50",
+                    )}
                   >
                     <IconComponent className="h-4 w-4" />
                     <span className="hidden lg:inline">{item.title}</span>
@@ -116,7 +121,7 @@ export function Navigation() {
                       className={cn(
                         "flex items-center space-x-3 p-3 rounded-lg transition-colors",
                         isActive
-                          ? "bg-muted text-foreground"
+                          ? "bg-muted text-foreground border-l-4 border-l-primary"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
                       )}
                     >
