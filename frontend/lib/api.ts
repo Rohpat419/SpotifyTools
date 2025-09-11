@@ -185,18 +185,18 @@ export const validatePlaylistUrl = (url: string): { isValid: boolean; playlistId
     return { isValid: false, error: "Playlist URL is required" }
   }
 
-  // Extract playlist ID from various Spotify URL formats
-  const spotifyUrlRegex = /(?:https?:\/\/)?(?:open\.)?spotify\.com\/playlist\/([a-zA-Z0-9]+)/
-  const match = url.match(spotifyUrlRegex)
-
-  if (match) {
-    return { isValid: true, playlistId: match[1] }
+  // Accept full Spotify playlist URLs (with or without query params)
+  const spotifyUrlRegex = /^(https?:\/\/)?(open\.)?spotify\.com\/playlist\/[a-zA-Z0-9]+(\?[^\s]*)?$/
+  if (spotifyUrlRegex.test(url.trim())) {
+    // Return the full URL as playlistId (backend expects this)
+    return { isValid: true, playlistId: url.trim() }
   }
 
-  // Check if it's just a playlist ID
+  // Optionally, accept just the 22-char playlist ID (legacy support)
   const playlistIdRegex = /^[a-zA-Z0-9]{22}$/
   if (playlistIdRegex.test(url.trim())) {
-    return { isValid: true, playlistId: url.trim() }
+    // Construct a canonical Spotify playlist URL
+    return { isValid: true, playlistId: `https://open.spotify.com/playlist/${url.trim()}` }
   }
 
   return { isValid: false, error: "Invalid Spotify playlist URL or ID format" }
