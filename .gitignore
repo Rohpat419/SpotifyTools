@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+*__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Environment variables
+*.env
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.egg-info*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# auth files for dev
+cert*
+
+# db files
+db*
+*spotify_tokens.json
+
+# Convenience Files, unrelated to project
+*.ps1

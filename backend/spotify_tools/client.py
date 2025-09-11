@@ -9,12 +9,12 @@ import requests
 
 from spotify_tools.auth.user_token_from_refresh import get_user_access_token
 from spotify_tools.duplicates import compute_keep_and_delete_uris
+from spotify_tools.config import *
+
 
 TIMEOUT=30
 
 API_URL = "https://api.spotify.com/v1"
-
-
 
 class SpotifyClient: 
     def __init__(self, *, client_id: Optional[str] = None, client_secret: Optional[str] = None, user_token: Optional[str] = None):
@@ -50,7 +50,6 @@ class SpotifyClient:
         return {"Authorization": f"Bearer {token}"}
     
 
-    # COME BACK TO THIS, should I enforce https right here?
     @staticmethod
     def playlist_id_from_input(input: str) -> str: 
         if input.startswith("http"):
