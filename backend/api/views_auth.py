@@ -8,6 +8,8 @@ from django.http import HttpResponse
 # trigger env var loading
 from spotify_tools.config import *
 
+from pathlib import Path
+
 AUTH_URL  = "https://accounts.spotify.com/authorize"
 TOKEN_URL = "https://accounts.spotify.com/api/token"
 
@@ -17,7 +19,26 @@ REDIRECT_URI  = os.getenv("SPOTIFY_REDIRECT_URI")    # e.g. https://your-backend
 SCOPES        = os.getenv("SPOTIFY_SCOPES", "playlist-modify-private playlist-read-private user-top-read")
 
 # In-memory PKCE cache (replace with DB/Redis for production multi-instance)
-PKCE_CACHE = {}
+# PKCE_CACHE = {}
+STATE_FILE = Path("/tmp/pkce_state.json")
+
+def save_state(state, verifier):
+    try:
+        if STATE_FILE.exists():
+            data = json.load(STATE_FILE.open())
+        else:
+            data = {}
+        data[state] = {"verifier": verifier, "ts": time.time()}
+        with STATE_FILE.open("w") as f:
+            json.dump(data, f)
+    except Exception as e:
+        print("Save state error:", e)
+
+def load_state(state):
+    if not STATE_FILE.exists():
+        return None
+    data = json.load(STATE_FILE.open())
+    return data.pop(state, None)
 
 def login(request):
     code_verifier = secrets.token_urlsafe(64)
@@ -26,7 +47,8 @@ def login(request):
     ).rstrip(b"=").decode("utf-8")
 
     state = secrets.token_urlsafe(16)
-    PKCE_CACHE[state] = {"verifier": code_verifier, "ts": time.time()}
+    # PKCE_CACHE[state] = {"verifier": code_verifier, "ts": time.time()}
+    save_state(state, code_verifier)
 
     params = {
         "client_id": CLIENT_ID,
@@ -50,7 +72,8 @@ def callback(request):
     if not code or not state:
         return JsonResponse({"error": "Missing code/state"}, status=400)
 
-    pkce = PKCE_CACHE.pop(state, None)
+    # pkce = PKCE_CACHE.pop(state, None)
+    pkce = load_state(state)
     if not pkce:
         return JsonResponse({"error": "Invalid state"}, status=400)
 
