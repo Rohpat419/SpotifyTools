@@ -1,9 +1,9 @@
 services:
   - type: web
-    name: spotify-tools-backend
+    name: spotify_tools
     env: python
     plan: free
-    buildCommand: ./build.sh
+    buildCommand: pip install -r requirements.txt && ./build.sh
     startCommand: gunicorn spotifytools_backend.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
@@ -13,11 +13,11 @@ services:
       - key: SPOTIFY_CLIENT_SECRET
         sync: false
       - key: SPOTIFY_REDIRECT_URI
-        value: https://spotify-tools-backend.onrender.com/api/auth/callback
+        value: https://spotify-tools-eozl.onrender.com/api/auth/callback
       - key: SPOTIFY_SCOPES
         value: playlist-modify-private playlist-read-private user-top-read
       - key: FRONTEND_SUCCESS_URL
-        value: https://your-frontend.vercel.app/auth/success
+        value: https://spotify-tools-xi.vercel.app/auth/success
       - key: DJANGO_SETTINGS_MODULE
         value: spotifytools_backend.settings
       - key: SECRET_KEY
