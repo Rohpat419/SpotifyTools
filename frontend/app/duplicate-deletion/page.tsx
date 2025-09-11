@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Trash2, Loader2, AlertCircle, CheckCircle, Music, AlertTriangle } from "lucide-react"
 import { api, type DuplicateDeletionResult } from "@/lib/api"
+import { SpotifyAuth } from "@/components/spotify-auth"
 
 export default function DuplicateDeletionPage() {
   const [playlistUrl, setPlaylistUrl] = useState("")
@@ -69,6 +70,15 @@ export default function DuplicateDeletionPage() {
       description="Remove duplicate tracks from your Spotify playlists with smart confirmation and detailed summaries."
     >
       <div className="max-w-4xl mx-auto space-y-8">
+        {/* Spotify Authentication Component */}
+        <SpotifyAuth
+          requiredFor={[
+            "Accessing private playlists",
+            "Modifying playlist contents",
+            "Permanently deleting duplicate tracks",
+          ]}
+        />
+
         {/* Warning Notice */}
         <Alert>
           <AlertTriangle className="h-4 w-4" />

@@ -49,14 +49,13 @@ export default function HomePage() {
           <div className="container mx-auto px-4 py-16 sm:py-24">
             <div className="text-center max-w-4xl mx-auto">
               <Badge variant="secondary" className="mb-4 text-sm font-medium">
-                Professional Playlist Management
+                "I wish Spotify had this"
               </Badge>
               <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 text-balance">
                 SpotifyTools
               </h1>
               <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto text-pretty leading-relaxed">
-                Advanced Spotify playlist management suite featuring duplicate detection, content filtering, and
-                comprehensive analytics for professional music curation.
+                Spotify user experience enhancement suite featuring duplicate detection, content filtering, and comprehensive analytics for professional music curation.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" className="text-base font-medium" asChild>
@@ -126,7 +125,7 @@ export default function HomePage() {
           <div className="container mx-auto px-4 py-8">
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
-                Built with React, TypeScript, and Next.js for professional playlist management.
+                Built with React, TypeScript, and Next.js for Extended Spotify Functionality.
               </p>
             </div>
           </div>

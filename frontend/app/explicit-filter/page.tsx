@@ -14,6 +14,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
 import { Filter, Loader2, AlertCircle, CheckCircle, Music, Users, Shield, Plus, Trash2, Info } from "lucide-react"
 import { api, type ExplicitFilterResult } from "@/lib/api"
+import { SpotifyAuth } from "@/components/spotify-auth"
 
 type FilterMode = "metadata" | "lyrics"
 type ActionType = "none" | "create_clean" | "remove_explicit"
@@ -93,6 +94,15 @@ export default function ExplicitFilterPage() {
       description="Scan and filter explicit content using metadata or lyrics analysis with flexible action options."
     >
       <div className="max-w-4xl mx-auto space-y-8">
+        {/* Spotify Authentication Component */}
+        <SpotifyAuth
+          requiredFor={[
+            "Accessing private playlists",
+            "Creating new playlists (for clean playlist option)",
+            "Modifying playlist contents (for removal option)",
+          ]}
+        />
+
         {/* Input Form */}
         <Card>
           <CardHeader>

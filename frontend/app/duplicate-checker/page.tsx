@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { CheckCircle, Download, Loader2, AlertCircle, Music, Users } from "lucide-react"
 import { api, type DuplicateCheckResult } from "@/lib/api"
+import { SpotifyAuth } from "@/components/spotify-auth"
 
 export default function DuplicateCheckerPage() {
   const [playlistUrl, setPlaylistUrl] = useState("")
@@ -82,6 +83,9 @@ export default function DuplicateCheckerPage() {
       description="Identify and analyze duplicate tracks in your Spotify playlists with detailed grouping and export options."
     >
       <div className="max-w-4xl mx-auto space-y-8">
+        {/* Spotify Authentication Component */}
+        <SpotifyAuth requiredFor={["Accessing private playlists", "Reading playlist metadata and track information"]} />
+
         {/* Input Form */}
         <Card>
           <CardHeader>

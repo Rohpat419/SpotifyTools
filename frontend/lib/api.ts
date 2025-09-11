@@ -1,3 +1,5 @@
+import { process } from "process"
+
 export interface ApiResponse<T> {
   success: boolean
   data?: T
@@ -13,166 +15,45 @@ export interface DuplicateGroup {
 }
 
 export interface DuplicateCheckResult {
-  totalTracks: number
-  duplicateGroups: DuplicateGroup[]
-  duplicateCount: number
+  groups: any[] // Backend returns groups array
+  count: number // Backend returns count
 }
 
 export interface DuplicateDeletionResult {
-  originalCount: number
-  keptCount: number
-  removedCount: number
-  playlistId: string
+  original_count?: number
+  kept_count?: number
+  removed_count?: number
+  playlist_id?: string
+  [key: string]: any // Backend may return additional fields
 }
 
 export interface ExplicitTrack {
-  trackId: string
-  trackName: string
+  uri: string
+  track_name: string
   artists: string[]
   reason: string
-  confidence: number
+  confidence?: number
 }
 
 export interface ExplicitFilterResult {
-  totalTracks: number
-  explicitTracks: ExplicitTrack[]
-  mode: "metadata" | "lyrics"
+  rows: ExplicitTrack[]
 }
 
-export interface TopTrack {
-  trackId: string
-  trackName: string
-  artists: string[]
-  album: string
-  playCount: number
-  rank: number
+export interface TopItem {
+  id: string
+  name: string
+  artists?: string[]
+  genres?: string[]
+  album?: string
+  [key: string]: any
 }
 
-export interface TopArtist {
-  artistId: string
-  artistName: string
-  genre: string[]
-  playCount: number
-  rank: number
+export interface TopItemsResult {
+  items: TopItem[]
 }
 
 // Mock API functions with realistic delays and responses
-export const api = {
-  async checkDuplicates(playlistUrl: string): Promise<ApiResponse<DuplicateCheckResult>> {
-    await new Promise((resolve) => setTimeout(resolve, 2000)) // Simulate API delay
-
-    // Mock response
-    return {
-      success: true,
-      data: {
-        totalTracks: 150,
-        duplicateCount: 12,
-        duplicateGroups: [
-          {
-            trackName: "Blinding Lights",
-            artists: ["The Weeknd"],
-            count: 3,
-            trackIds: ["track1", "track2", "track3"],
-          },
-          {
-            trackName: "Shape of You",
-            artists: ["Ed Sheeran"],
-            count: 2,
-            trackIds: ["track4", "track5"],
-          },
-        ],
-      },
-    }
-  },
-
-  async deleteDuplicates(playlistUrl: string): Promise<ApiResponse<DuplicateDeletionResult>> {
-    await new Promise((resolve) => setTimeout(resolve, 3000))
-
-    return {
-      success: true,
-      data: {
-        originalCount: 150,
-        keptCount: 138,
-        removedCount: 12,
-        playlistId: "playlist123",
-      },
-    }
-  },
-
-  async filterExplicitContent(
-    playlistUrl: string,
-    mode: "metadata" | "lyrics",
-  ): Promise<ApiResponse<ExplicitFilterResult>> {
-    await new Promise((resolve) => setTimeout(resolve, 2500))
-
-    return {
-      success: true,
-      data: {
-        totalTracks: 150,
-        mode,
-        explicitTracks: [
-          {
-            trackId: "track1",
-            trackName: "Example Explicit Song",
-            artists: ["Artist Name"],
-            reason: mode === "metadata" ? "Marked as explicit" : "Contains explicit lyrics",
-            confidence: 0.95,
-          },
-        ],
-      },
-    }
-  },
-
-  async getTopTracks(timeRange: "4_weeks" | "6_months" | "all_time"): Promise<ApiResponse<TopTrack[]>> {
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
-    return {
-      success: true,
-      data: [
-        {
-          trackId: "track1",
-          trackName: "Blinding Lights",
-          artists: ["The Weeknd"],
-          album: "After Hours",
-          playCount: 45,
-          rank: 1,
-        },
-        {
-          trackId: "track2",
-          trackName: "Shape of You",
-          artists: ["Ed Sheeran"],
-          album: "÷ (Divide)",
-          playCount: 38,
-          rank: 2,
-        },
-      ],
-    }
-  },
-
-  async getTopArtists(timeRange: "4_weeks" | "6_months" | "all_time"): Promise<ApiResponse<TopArtist[]>> {
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
-    return {
-      success: true,
-      data: [
-        {
-          artistId: "artist1",
-          artistName: "The Weeknd",
-          genre: ["Pop", "R&B"],
-          playCount: 120,
-          rank: 1,
-        },
-        {
-          artistId: "artist2",
-          artistName: "Ed Sheeran",
-          genre: ["Pop", "Folk"],
-          playCount: 95,
-          rank: 2,
-        },
-      ],
-    }
-  },
-}
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://your-backend.onrender.com"
 
 export class ApiError extends Error {
   constructor(
@@ -197,7 +78,7 @@ class ApiClient {
   private defaultRetries = 3
   private defaultRetryDelay = 1000
 
-  constructor(baseUrl = "/api") {
+  constructor(baseUrl = API_BASE_URL) {
     this.baseUrl = baseUrl
   }
 
@@ -356,38 +237,26 @@ export const enhancedApi = {
     }
 
     try {
-      // Simulate API delay for demo
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      const response = await fetch(`${API_BASE_URL}/api/get_duplicate_tracks`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          playlist_id: validation.playlistId,
+          strict: false,
+          tol_secs: 5,
+        }),
+      })
 
-      // Mock response with more realistic data
-      const mockData: DuplicateCheckResult = {
-        totalTracks: Math.floor(Math.random() * 200) + 50,
-        duplicateCount: Math.floor(Math.random() * 20),
-        duplicateGroups: [
-          {
-            trackName: "Blinding Lights",
-            artists: ["The Weeknd"],
-            count: 3,
-            trackIds: ["track1", "track2", "track3"],
-          },
-          {
-            trackName: "Shape of You",
-            artists: ["Ed Sheeran"],
-            count: 2,
-            trackIds: ["track4", "track5"],
-          },
-          {
-            trackName: "Watermelon Sugar",
-            artists: ["Harry Styles"],
-            count: 2,
-            trackIds: ["track6", "track7"],
-          },
-        ],
+      if (!response.ok) {
+        throw new ApiError(`HTTP ${response.status}: ${response.statusText}`, response.status)
       }
 
+      const data = await response.json()
       return {
         success: true,
-        data: mockData,
+        data,
         message: "Duplicate check completed successfully",
       }
     } catch (error) {
@@ -411,20 +280,24 @@ export const enhancedApi = {
     }
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 3000))
+      const response = await fetch(`${API_BASE_URL}/api/delete_duplicate_tracks`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          playlist_id: validation.playlistId,
+        }),
+      })
 
-      const originalCount = Math.floor(Math.random() * 200) + 50
-      const removedCount = Math.floor(Math.random() * 20) + 5
-      const mockData: DuplicateDeletionResult = {
-        originalCount,
-        keptCount: originalCount - removedCount,
-        removedCount,
-        playlistId: validation.playlistId || "mock_playlist_id",
+      if (!response.ok) {
+        throw new ApiError(`HTTP ${response.status}: ${response.statusText}`, response.status)
       }
 
+      const data = await response.json()
       return {
         success: true,
-        data: mockData,
+        data,
         message: "Duplicates deleted successfully",
       }
     } catch (error) {
@@ -449,39 +322,107 @@ export const enhancedApi = {
     }
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2500))
-
-      const totalTracks = Math.floor(Math.random() * 150) + 50
-      const explicitCount = Math.floor(Math.random() * 10) + 1
-
-      const mockExplicitTracks: ExplicitTrack[] = [
-        {
-          trackId: "track1",
-          trackName: "Example Explicit Song",
-          artists: ["Artist Name"],
-          reason:
-            mode === "metadata" ? "Marked as explicit in metadata" : "Contains explicit language in lyrics analysis",
-          confidence: 0.95,
+      const response = await fetch(`${API_BASE_URL}/api/explicit_report`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-        {
-          trackId: "track2",
-          trackName: "Another Explicit Track",
-          artists: ["Another Artist"],
-          reason: mode === "metadata" ? "Explicit content flag detected" : "Profanity detected in lyrics analysis",
-          confidence: 0.87,
-        },
-      ].slice(0, explicitCount)
+        body: JSON.stringify({
+          playlist_id: validation.playlistId,
+          mode,
+          extra_banned_words: null,
+        }),
+      })
 
-      const mockData: ExplicitFilterResult = {
-        totalTracks,
-        mode,
-        explicitTracks: mockExplicitTracks,
+      if (!response.ok) {
+        throw new ApiError(`HTTP ${response.status}: ${response.statusText}`, response.status)
       }
 
+      const data = await response.json()
       return {
         success: true,
-        data: mockData,
+        data,
         message: "Explicit content scan completed",
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: formatError(error),
+      }
+    }
+  },
+
+  async createCleanPlaylist(
+    playlistUrl: string,
+    explicitRows: ExplicitTrack[],
+    options?: ApiRequestOptions,
+  ): Promise<ApiResponse<any>> {
+    const validation = validatePlaylistUrl(playlistUrl)
+    if (!validation.isValid) {
+      return {
+        success: false,
+        error: validation.error,
+      }
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/create_clean_playlist`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          playlist_id: validation.playlistId,
+          rows: explicitRows,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new ApiError(`HTTP ${response.status}: ${response.statusText}`, response.status)
+      }
+
+      const data = await response.json()
+      return {
+        success: true,
+        data,
+        message: "Clean playlist created successfully",
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: formatError(error),
+      }
+    }
+  },
+
+  async getTopItems(
+    kind: "tracks" | "artists",
+    timeRange: "4_weeks" | "6_months" | "all_time",
+    options?: ApiRequestOptions,
+  ): Promise<ApiResponse<TopItemsResult>> {
+    try {
+      const backendTimeRange =
+        timeRange === "4_weeks" ? "short_term" : timeRange === "6_months" ? "medium_term" : "long_term"
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/top_items?kind=${kind}&time_range=${backendTimeRange}&limit=5`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      )
+
+      if (!response.ok) {
+        throw new ApiError(`HTTP ${response.status}: ${response.statusText}`, response.status)
+      }
+
+      const data = await response.json()
+      return {
+        success: true,
+        data,
+        message: `Top ${kind} retrieved successfully`,
       }
     } catch (error) {
       return {
@@ -494,122 +435,15 @@ export const enhancedApi = {
   async getTopTracks(
     timeRange: "4_weeks" | "6_months" | "all_time",
     options?: ApiRequestOptions,
-  ): Promise<ApiResponse<TopTrack[]>> {
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      const mockTracks: TopTrack[] = [
-        {
-          trackId: "track1",
-          trackName: "Blinding Lights",
-          artists: ["The Weeknd"],
-          album: "After Hours",
-          playCount: Math.floor(Math.random() * 100) + 20,
-          rank: 1,
-        },
-        {
-          trackId: "track2",
-          trackName: "Shape of You",
-          artists: ["Ed Sheeran"],
-          album: "÷ (Divide)",
-          playCount: Math.floor(Math.random() * 90) + 15,
-          rank: 2,
-        },
-        {
-          trackId: "track3",
-          trackName: "Watermelon Sugar",
-          artists: ["Harry Styles"],
-          album: "Fine Line",
-          playCount: Math.floor(Math.random() * 80) + 10,
-          rank: 3,
-        },
-        {
-          trackId: "track4",
-          trackName: "Levitating",
-          artists: ["Dua Lipa"],
-          album: "Future Nostalgia",
-          playCount: Math.floor(Math.random() * 70) + 8,
-          rank: 4,
-        },
-        {
-          trackId: "track5",
-          trackName: "Good 4 U",
-          artists: ["Olivia Rodrigo"],
-          album: "SOUR",
-          playCount: Math.floor(Math.random() * 60) + 5,
-          rank: 5,
-        },
-      ]
-
-      return {
-        success: true,
-        data: mockTracks,
-        message: "Top tracks retrieved successfully",
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: formatError(error),
-      }
-    }
+  ): Promise<ApiResponse<TopItemsResult>> {
+    return this.getTopItems("tracks", timeRange, options)
   },
 
   async getTopArtists(
     timeRange: "4_weeks" | "6_months" | "all_time",
     options?: ApiRequestOptions,
-  ): Promise<ApiResponse<TopArtist[]>> {
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      const mockArtists: TopArtist[] = [
-        {
-          artistId: "artist1",
-          artistName: "The Weeknd",
-          genre: ["Pop", "R&B", "Alternative"],
-          playCount: Math.floor(Math.random() * 200) + 50,
-          rank: 1,
-        },
-        {
-          artistId: "artist2",
-          artistName: "Ed Sheeran",
-          genre: ["Pop", "Folk", "Acoustic"],
-          playCount: Math.floor(Math.random() * 180) + 40,
-          rank: 2,
-        },
-        {
-          artistId: "artist3",
-          artistName: "Harry Styles",
-          genre: ["Pop", "Rock", "Alternative"],
-          playCount: Math.floor(Math.random() * 160) + 35,
-          rank: 3,
-        },
-        {
-          artistId: "artist4",
-          artistName: "Dua Lipa",
-          genre: ["Pop", "Dance", "Electronic"],
-          playCount: Math.floor(Math.random() * 140) + 30,
-          rank: 4,
-        },
-        {
-          artistId: "artist5",
-          artistName: "Olivia Rodrigo",
-          genre: ["Pop", "Alternative", "Indie"],
-          playCount: Math.floor(Math.random() * 120) + 25,
-          rank: 5,
-        },
-      ]
-
-      return {
-        success: true,
-        data: mockArtists,
-        message: "Top artists retrieved successfully",
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: formatError(error),
-      }
-    }
+  ): Promise<ApiResponse<TopItemsResult>> {
+    return this.getTopItems("artists", timeRange, options)
   },
 }
 
@@ -620,3 +454,5 @@ export const apiUtils = {
   ApiError,
   apiClient,
 }
+
+export const api = enhancedApi

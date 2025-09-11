@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { BarChart3, Loader2, AlertCircle, Music, Users, Calendar, Trophy, Play } from "lucide-react"
 import { api, type TopTrack, type TopArtist } from "@/lib/api"
+import { SpotifyAuth } from "@/components/spotify-auth"
 
 type TimeRange = "4_weeks" | "6_months" | "all_time"
 type ContentType = "tracks" | "artists"
@@ -90,6 +91,15 @@ export default function TopTracksPage() {
       description="Discover your listening patterns with detailed analytics across different time periods."
     >
       <div className="max-w-4xl mx-auto space-y-8">
+        {/* Spotify Authentication Component */}
+        <SpotifyAuth
+          requiredFor={[
+            "Accessing your personal listening history",
+            "Retrieving top tracks and artists data",
+            "Analyzing your music preferences across time periods",
+          ]}
+        />
+
         {/* Controls */}
         <Card>
           <CardHeader>
