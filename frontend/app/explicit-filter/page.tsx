@@ -67,9 +67,7 @@ export default function ExplicitFilterPage() {
           setActionResult("New clean playlist created successfully! Check your Spotify library for the new playlist.")
           break
         case "remove_explicit":
-          setActionResult(
-            `${result.explicitTracks.length} explicit tracks have been removed from your original playlist.`,
-          )
+          setActionResult(`${result.rows.length} explicit tracks have been removed from your original playlist.`)
           break
       }
     } catch (err) {
@@ -207,25 +205,21 @@ export default function ExplicitFilterPage() {
               <CardHeader>
                 <CardTitle>Scan Results</CardTitle>
                 <CardDescription>
-                  Scanned using {result.mode === "metadata" ? "metadata analysis" : "lyrics analysis"}
+                  Scanned using {mode === "metadata" ? "metadata analysis" : "lyrics analysis"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <div className="text-2xl font-bold text-foreground">{result.totalTracks}</div>
+                    <div className="text-2xl font-bold text-foreground">-</div>
                     <div className="text-sm text-muted-foreground">Total Tracks</div>
                   </div>
                   <div className="text-center p-4 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
-                    <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                      {result.explicitTracks.length}
-                    </div>
+                    <div className="text-2xl font-bold text-red-600 dark:text-red-400">{result.rows.length}</div>
                     <div className="text-sm text-red-700 dark:text-red-300">Explicit Tracks</div>
                   </div>
                   <div className="text-center p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                      {result.totalTracks - result.explicitTracks.length}
-                    </div>
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">-</div>
                     <div className="text-sm text-green-700 dark:text-green-300">Clean Tracks</div>
                   </div>
                 </div>
@@ -233,7 +227,7 @@ export default function ExplicitFilterPage() {
             </Card>
 
             {/* Explicit Tracks List */}
-            {result.explicitTracks.length > 0 ? (
+            {result.rows.length > 0 ? (
               <Card>
                 <CardHeader>
                   <CardTitle>Flagged Tracks</CardTitle>
@@ -241,13 +235,13 @@ export default function ExplicitFilterPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {result.explicitTracks.map((track, index) => (
+                    {result.rows.map((track, index) => (
                       <div key={index} className="border border-border rounded-lg p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <Music className="h-4 w-4 text-muted-foreground" />
-                              <h3 className="font-semibold text-foreground">{track.trackName}</h3>
+                              <h3 className="font-semibold text-foreground">{track.name}</h3>
                             </div>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                               <Users className="h-3 w-3" />
@@ -262,9 +256,6 @@ export default function ExplicitFilterPage() {
                             <Badge variant="destructive" className="mb-2">
                               Explicit
                             </Badge>
-                            <div className="text-xs text-muted-foreground">
-                              {Math.round(track.confidence * 100)}% confidence
-                            </div>
                           </div>
                         </div>
                       </div>
@@ -283,7 +274,7 @@ export default function ExplicitFilterPage() {
             )}
 
             {/* Action Options */}
-            {result.explicitTracks.length > 0 && (
+            {result.rows.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle>Choose Action</CardTitle>

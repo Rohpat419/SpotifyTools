@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Separator } from "@/components/ui/separator"
 import { CheckCircle, Download, Loader2, AlertCircle, Music, Users } from "lucide-react"
 import { api, type DuplicateCheckResult } from "@/lib/api"
 import { SpotifyAuth } from "@/components/spotify-auth"
@@ -51,12 +50,8 @@ export default function DuplicateCheckerPage() {
     let mimeType: string
 
     if (format === "csv") {
-      const csvHeader = "Track Name,Artists,Duplicate Count,Track IDs\n"
-      const csvRows = result.duplicateGroups
-        .map(
-          (group) => `"${group.trackName}","${group.artists.join(", ")}",${group.count},"${group.trackIds.join(", ")}"`,
-        )
-        .join("\n")
+      const csvHeader = "Track Name,Artists,Duplicate Count\\n"
+      const csvRows = result.groups.map((group) => `"${group[0]}","${group[1].join(", ")}",${group[2]}"`).join("\\n")
       content = csvHeader + csvRows
       filename = "spotify-duplicates.csv"
       mimeType = "text/csv"
@@ -147,25 +142,23 @@ export default function DuplicateCheckerPage() {
                 <CardTitle>Duplicate Analysis Summary</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <div className="text-2xl font-bold text-foreground">{result.totalTracks}</div>
-                    <div className="text-sm text-muted-foreground">Total Tracks</div>
-                  </div>
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <div className="text-2xl font-bold text-destructive">{result.duplicateCount}</div>
-                    <div className="text-sm text-muted-foreground">Duplicate Tracks</div>
-                  </div>
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <div className="text-2xl font-bold text-primary">{result.duplicateGroups.length}</div>
+                    <div className="text-2xl font-bold text-destructive">{result.groups.length}</div>
                     <div className="text-sm text-muted-foreground">Duplicate Groups</div>
+                  </div>
+                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                    <div className="text-2xl font-bold text-primary">
+                      {result.groups.reduce((acc, group) => acc + group[2], 0)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Total Duplicate Tracks</div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Export Options */}
-            {result.duplicateGroups.length > 0 && (
+            {result.groups.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -190,34 +183,30 @@ export default function DuplicateCheckerPage() {
             )}
 
             {/* Duplicate Groups */}
-            {result.duplicateGroups.length > 0 ? (
+            {result.groups.length > 0 ? (
               <Card>
                 <CardHeader>
                   <CardTitle>Duplicate Groups</CardTitle>
-                  <CardDescription>Found {result.duplicateGroups.length} groups of duplicate tracks</CardDescription>
+                  <CardDescription>Found {result.groups.length} groups of duplicate tracks</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {result.duplicateGroups.map((group, index) => (
+                    {result.groups.map((group, index) => (
                       <div key={index} className="border border-border rounded-lg p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <Music className="h-4 w-4 text-muted-foreground" />
-                              <h3 className="font-semibold text-foreground">{group.trackName}</h3>
+                              <h3 className="font-semibold text-foreground">{group[0]}</h3>
                             </div>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <Users className="h-3 w-3" />
-                              <span>{group.artists.join(", ")}</span>
+                              <span>{group[1].join(", ")}</span>
                             </div>
                           </div>
                           <Badge variant="destructive" className="ml-4">
-                            {group.count} duplicates
+                            {group[2]} duplicates
                           </Badge>
-                        </div>
-                        <Separator className="my-3" />
-                        <div className="text-xs text-muted-foreground">
-                          <strong>Track IDs:</strong> {group.trackIds.join(", ")}
                         </div>
                       </div>
                     ))}

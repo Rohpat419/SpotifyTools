@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   AlertDialog,
@@ -195,25 +194,16 @@ export default function DuplicateDeletionPage() {
               <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="text-center p-6 bg-muted/50 rounded-lg">
-                    <div className="text-3xl font-bold text-muted-foreground mb-2">{result.originalCount}</div>
+                    <div className="text-3xl font-bold text-muted-foreground mb-2">{result.original}</div>
                     <div className="text-sm text-muted-foreground">Original Tracks</div>
                   </div>
                   <div className="text-center p-6 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-                    <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">{result.keptCount}</div>
+                    <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">{result.kept}</div>
                     <div className="text-sm text-green-700 dark:text-green-300">Tracks Kept</div>
                   </div>
                   <div className="text-center p-6 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
-                    <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">{result.removedCount}</div>
+                    <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">{result.removed}</div>
                     <div className="text-sm text-red-700 dark:text-red-300">Tracks Removed</div>
-                  </div>
-                </div>
-
-                <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Playlist ID:</span>
-                    <Badge variant="outline" className="font-mono text-xs">
-                      {result.playlistId}
-                    </Badge>
                   </div>
                 </div>
               </CardContent>

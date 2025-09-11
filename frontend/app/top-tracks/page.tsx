@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { BarChart3, Loader2, AlertCircle, Music, Users, Calendar, Trophy, Play } from "lucide-react"
-import { api, type TopTrack, type TopArtist } from "@/lib/api"
+import { api, type TopTrackResponse, type TopArtistResponse } from "@/lib/api"
 import { SpotifyAuth } from "@/components/spotify-auth"
 
 type TimeRange = "4_weeks" | "6_months" | "all_time"
@@ -20,8 +20,8 @@ export default function TopTracksPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>("4_weeks")
   const [contentType, setContentType] = useState<ContentType>("tracks")
   const [isLoading, setIsLoading] = useState(false)
-  const [tracks, setTracks] = useState<TopTrack[] | null>(null)
-  const [artists, setArtists] = useState<TopArtist[] | null>(null)
+  const [tracks, setTracks] = useState<TopTrackResponse | null>(null)
+  const [artists, setArtists] = useState<TopArtistResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const timeRangeLabels = {
@@ -218,30 +218,30 @@ export default function TopTracksPage() {
                 <Music className="h-5 w-5 text-primary" />
                 Your Top Tracks
               </CardTitle>
-              <CardDescription>{timeRangeLabels[timeRange]} • Top 5 most played tracks</CardDescription>
+              <CardDescription>{timeRangeLabels[timeRange]} • Top tracks</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {tracks.map((track, index) => (
-                  <div key={track.trackId} className="flex items-center gap-4 p-4 rounded-lg border border-border">
-                    <div className="flex-shrink-0">{getRankIcon(track.rank)}</div>
+                {tracks.items.map((track, index) => (
+                  <div key={track.uri || index} className="flex items-center gap-4 p-4 rounded-lg border border-border">
+                    <div className="flex-shrink-0">{getRankIcon(index + 1)}</div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-foreground truncate">{track.trackName}</h3>
-                        {track.rank <= 3 && (
+                        <h3 className="font-semibold text-foreground truncate">{track.name}</h3>
+                        {index < 3 && (
                           <Badge variant="secondary" className="text-xs">
-                            #{track.rank}
+                            #{index + 1}
                           </Badge>
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                         <Users className="h-3 w-3" />
-                        <span className="truncate">{track.artists.join(", ")}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Music className="h-3 w-3" />
-                        <span className="truncate">{track.album}</span>
+                        <span className="truncate">
+                          {track.artists
+                            ?.map((artist) => (typeof artist === "string" ? artist : artist.name))
+                            .join(", ") || "Unknown Artist"}
+                        </span>
                       </div>
                     </div>
 
@@ -267,43 +267,40 @@ export default function TopTracksPage() {
                 <Users className="h-5 w-5 text-primary" />
                 Your Top Artists
               </CardTitle>
-              <CardDescription>{timeRangeLabels[timeRange]} • Top 5 most played artists</CardDescription>
+              <CardDescription>{timeRangeLabels[timeRange]} • Top artists</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {artists.map((artist, index) => (
-                  <div key={artist.artistId} className="flex items-center gap-4 p-4 rounded-lg border border-border">
-                    <div className="flex-shrink-0">{getRankIcon(artist.rank)}</div>
+                {artists.items.map((artist, index) => (
+                  <div
+                    key={artist.uri || index}
+                    className="flex items-center gap-4 p-4 rounded-lg border border-border"
+                  >
+                    <div className="flex-shrink-0">{getRankIcon(index + 1)}</div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-foreground truncate">{artist.artistName}</h3>
-                        {artist.rank <= 3 && (
+                        <h3 className="font-semibold text-foreground truncate">{artist.name}</h3>
+                        {index < 3 && (
                           <Badge variant="secondary" className="text-xs">
-                            #{artist.rank}
+                            #{index + 1}
                           </Badge>
                         )}
                       </div>
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {artist.genre.slice(0, 3).map((genre, genreIndex) => (
-                          <Badge key={genreIndex} variant="outline" className="text-xs">
-                            {genre}
-                          </Badge>
-                        ))}
-                        {artist.genre.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{artist.genre.length - 3} more
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex-shrink-0 text-right">
-                      <div className="flex items-center gap-1 text-sm font-medium text-primary mb-1">
-                        <Play className="h-3 w-3" />
-                        {artist.playCount}
-                      </div>
-                      <div className="text-xs text-muted-foreground">plays</div>
+                      {artist.genres && artist.genres.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {artist.genres.slice(0, 3).map((genre, genreIndex) => (
+                            <Badge key={genreIndex} variant="outline" className="text-xs">
+                              {genre}
+                            </Badge>
+                          ))}
+                          {artist.genres.length > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{artist.genres.length - 3} more
+                            </Badge>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -313,7 +310,7 @@ export default function TopTracksPage() {
         )}
 
         {/* Empty State */}
-        {((tracks && tracks.length === 0) || (artists && artists.length === 0)) && !isLoading && (
+        {((tracks && tracks.items.length === 0) || (artists && artists.items.length === 0)) && !isLoading && (
           <Card>
             <CardContent className="text-center py-12">
               <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
