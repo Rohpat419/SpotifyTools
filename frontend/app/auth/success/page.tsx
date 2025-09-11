@@ -11,9 +11,7 @@ import { CheckCircle, AlertCircle, Music, ArrowLeft, Home } from "lucide-react"
 export default function AuthSuccessPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [isVerifying, setIsVerifying] = useState(true)
   const [authStatus, setAuthStatus] = useState<"success" | "error" | null>(null)
-  const [userInfo, setUserInfo] = useState<any>(null)
 
   useEffect(() => {
     const ok = searchParams.get("ok")
@@ -21,53 +19,15 @@ export default function AuthSuccessPage() {
 
     if (error) {
       setAuthStatus("error")
-      setIsVerifying(false)
       return
     }
 
     if (ok === "1") {
-      // Verify authentication by calling /api/me
-      verifyAuth()
+      setAuthStatus("success")
     } else {
       setAuthStatus("error")
-      setIsVerifying(false)
     }
   }, [searchParams])
-
-  const verifyAuth = async () => {
-    try {
-      const response = await fetch("/api/me")
-      if (response.ok) {
-        const userData = await response.json()
-        setUserInfo(userData)
-        setAuthStatus("success")
-      } else {
-        setAuthStatus("error")
-      }
-    } catch (err) {
-      setAuthStatus("error")
-    } finally {
-      setIsVerifying(false)
-    }
-  }
-
-  if (isVerifying) {
-    return (
-      <PageLayout title="Verifying Authentication" description="Please wait while we verify your Spotify connection...">
-        <div className="max-w-2xl mx-auto">
-          <Card>
-            <CardContent className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1DB954] mx-auto mb-4"></div>
-                <h3 className="text-lg font-semibold mb-2">Verifying your connection...</h3>
-                <p className="text-muted-foreground">This should only take a moment</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </PageLayout>
-    )
-  }
 
   return (
     <PageLayout
@@ -86,10 +46,7 @@ export default function AuthSuccessPage() {
                 <CheckCircle className="h-8 w-8 text-white" />
               </div>
               <CardTitle className="text-2xl text-[#1DB954]">Welcome to SpotifyTools!</CardTitle>
-              <CardDescription>
-                {userInfo?.display_name && `Hi ${userInfo.display_name}! `}
-                Your Spotify account has been successfully connected.
-              </CardDescription>
+              <CardDescription>Your Spotify account has been successfully connected.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Alert>
@@ -143,7 +100,7 @@ export default function AuthSuccessPage() {
                   Return Home
                 </Button>
                 <Button
-                  onClick={() => (window.location.href = "/api/auth/login")}
+                  onClick={() => (window.location.href = "https://spotify-tools-eozl.onrender.com/api/auth/login")}
                   className="flex-1 bg-[#1DB954] hover:bg-[#1ed760]"
                 >
                   <Music className="mr-2 h-4 w-4" />

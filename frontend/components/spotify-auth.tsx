@@ -23,15 +23,9 @@ export function SpotifyAuth({ requiredFor, onAuthSuccess }: SpotifyAuthProps) {
   const checkAuthStatus = async () => {
     try {
       console.log("[v0] Checking auth status...")
-      const response = await fetch("/api/me")
-      console.log("[v0] Auth status response:", response.status)
-      setIsAuthenticated(response.ok)
-      if (response.ok) {
-        console.log("[v0] User is authenticated")
-        onAuthSuccess?.()
-      } else {
-        console.log("[v0] User is not authenticated")
-      }
+      // For now, assume user needs to authenticate since we can't check status
+      setIsAuthenticated(false)
+      console.log("[v0] User needs to authenticate")
     } catch (err) {
       console.error("[v0] Auth status check failed:", err)
       setIsAuthenticated(false)
@@ -41,7 +35,7 @@ export function SpotifyAuth({ requiredFor, onAuthSuccess }: SpotifyAuthProps) {
   }
 
   const handleLogin = () => {
-    window.location.href = "/api/auth/login"
+    window.location.href = "https://spotify-tools-eozl.onrender.com/api/auth/login"
   }
 
   if (isChecking) {

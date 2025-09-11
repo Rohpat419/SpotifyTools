@@ -53,7 +53,7 @@ export interface TopItemsResult {
 const getApiBaseUrl = () => {
   // Use globalThis to safely access process in both environments
   const env = (typeof globalThis !== "undefined" && globalThis.process?.env) || {}
-  return env.NEXT_PUBLIC_API_BASE_URL || "https://your-backend.onrender.com"
+  return env.NEXT_PUBLIC_API_BASE_URL || "https://spotify-tools-eozl.onrender.com"
 }
 
 const API_BASE_URL = getApiBaseUrl()
@@ -246,7 +246,7 @@ export const enhancedApi = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          playlist_id: validation.playlistId,
+          playlist_id: `spotify:playlist:${validation.playlistId}`,
           strict: false,
           tol_secs: 5,
         }),
@@ -289,7 +289,7 @@ export const enhancedApi = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          playlist_id: validation.playlistId,
+          playlist_id: `spotify:playlist:${validation.playlistId}`,
         }),
       })
 
@@ -333,7 +333,6 @@ export const enhancedApi = {
         body: JSON.stringify({
           playlist_id: validation.playlistId,
           mode,
-          extra_banned_words: null,
         }),
       })
 
