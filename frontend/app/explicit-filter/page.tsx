@@ -249,7 +249,13 @@ export default function ExplicitFilterPage() {
                             </div>
                             <div className="flex items-center gap-2 text-sm">
                               <Info className="h-3 w-3 text-orange-500" />
-                              <span className="text-orange-700 dark:text-orange-300">{track.reason}</span>
+                              <span className="text-orange-700 dark:text-orange-300">
+                                {track.reason === "spotify_metadata_explicit_flag"
+                                  ? "Flagged by Spotify metadata"
+                                  : track.reason === "lyrics_api_flag"
+                                    ? "Flagged by lyrics analysis"
+                                    : track.reason}
+                              </span>
                             </div>
                           </div>
                           <div className="ml-4 text-right">

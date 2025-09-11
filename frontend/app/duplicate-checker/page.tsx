@@ -50,8 +50,8 @@ export default function DuplicateCheckerPage() {
     let mimeType: string
 
     if (format === "csv") {
-      const csvHeader = "Track Name,Artists,Duplicate Count\\n"
-      const csvRows = result.groups.map((group) => `"${group[0]}","${group[1].join(", ")}",${group[2]}"`).join("\\n")
+      const csvHeader = "Track Name,Artists,Duration (ms)\\n"
+      const csvRows = result.groups.map((group) => `"${group[0]}","${group[1].join(", ")}",${group[2]}`).join("\\n")
       content = csvHeader + csvRows
       filename = "spotify-duplicates.csv"
       mimeType = "text/csv"
@@ -144,13 +144,11 @@ export default function DuplicateCheckerPage() {
               <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <div className="text-2xl font-bold text-destructive">{result.groups.length}</div>
+                    <div className="text-2xl font-bold text-destructive">{result.count}</div>
                     <div className="text-sm text-muted-foreground">Duplicate Groups</div>
                   </div>
                   <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <div className="text-2xl font-bold text-primary">
-                      {result.groups.reduce((acc, group) => acc + group[2], 0)}
-                    </div>
+                    <div className="text-2xl font-bold text-primary">{result.groups.length}</div>
                     <div className="text-sm text-muted-foreground">Total Duplicate Tracks</div>
                   </div>
                 </div>
@@ -187,7 +185,7 @@ export default function DuplicateCheckerPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Duplicate Groups</CardTitle>
-                  <CardDescription>Found {result.groups.length} groups of duplicate tracks</CardDescription>
+                  <CardDescription>Found {result.count} groups of duplicate tracks</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -204,8 +202,9 @@ export default function DuplicateCheckerPage() {
                               <span>{group[1].join(", ")}</span>
                             </div>
                           </div>
-                          <Badge variant="destructive" className="ml-4">
-                            {group[2]} duplicates
+                          <Badge variant="secondary" className="ml-4">
+                            {Math.floor(group[2] / 1000 / 60)}:
+                            {String(Math.floor((group[2] / 1000) % 60)).padStart(2, "0")}
                           </Badge>
                         </div>
                       </div>
