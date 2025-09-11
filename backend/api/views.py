@@ -84,3 +84,7 @@ def top_items(request):
     client = SpotifyClient()
     items = get_user_top(client, kind=kind, time_range=time_range, limit=limit)
     return Response({"items": items})
+
+@api_view(["GET"])
+def ping(request):
+    return Response({"status": "ok", "message": "pong"})

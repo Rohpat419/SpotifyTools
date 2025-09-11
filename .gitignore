@@ -25,5 +25,6 @@ cert*
 db*
 *spotify_tokens.json
 
-# Convenience Files, unrelated to project
+# Convenience Files
 *.ps1
+*.envUpload

@@ -10,4 +10,5 @@ urlpatterns = [
     path("auth/login", views_auth.login),
     path("auth/callback", views_auth.callback),
     path("auth/success", views_auth.auth_success, name="auth_success"),
+    path("debug/ping", views.ping),
 ]
