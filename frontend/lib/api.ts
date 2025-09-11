@@ -248,7 +248,7 @@ export const enhancedApi = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          playlist_id: `spotify:playlist:${validation.playlistId}`,
+          playlist_id: `${validation.playlistId}`,
           strict: false,
           tol_secs: 5,
         }),
@@ -291,7 +291,7 @@ export const enhancedApi = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          playlist_id: `spotify:playlist:${validation.playlistId}`,
+          playlist_id: `${validation.playlistId}`,
         }),
       })
 
