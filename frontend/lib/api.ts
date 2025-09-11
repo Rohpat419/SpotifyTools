@@ -1,5 +1,3 @@
-import { process } from "process"
-
 export interface ApiResponse<T> {
   success: boolean
   data?: T
@@ -52,8 +50,13 @@ export interface TopItemsResult {
   items: TopItem[]
 }
 
-// Mock API functions with realistic delays and responses
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://your-backend.onrender.com"
+const getApiBaseUrl = () => {
+  // Use globalThis to safely access process in both environments
+  const env = (typeof globalThis !== "undefined" && globalThis.process?.env) || {}
+  return env.NEXT_PUBLIC_API_BASE_URL || "https://your-backend.onrender.com"
+}
+
+const API_BASE_URL = getApiBaseUrl()
 
 export class ApiError extends Error {
   constructor(
