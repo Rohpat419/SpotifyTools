@@ -180,6 +180,7 @@ const apiClient = new ApiClient()
 
 // Utility functions for common operations
 export const validatePlaylistUrl = (url: string): { isValid: boolean; playlistId?: string; error?: string } => {
+  console.log("PLaylist ID that the user submitted: ", url)
   if (!url.trim()) {
     return { isValid: false, error: "Playlist URL is required" }
   }
@@ -238,6 +239,7 @@ export const enhancedApi = {
         error: validation.error,
       }
     }
+    console.log("After validation function, playlistId is now: ", validation.playlistId)
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/get_duplicate_tracks`, {
