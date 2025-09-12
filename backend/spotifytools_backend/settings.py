@@ -88,12 +88,13 @@ WSGI_APPLICATION = 'spotifytools_backend.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+default_db_url = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
 
 DATABASES = {
     "default": dj_database_url.config(
-        default=os.environ.get("DATABASE_URL", f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
+        default=default_db_url,
         conn_max_age=600,
-        ssl_require=True,
+        ssl_require=default_db_url.startswith("postgres://") or default_db_url.startswith("postgresql://"),
     )
 }
 
