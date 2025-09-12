@@ -20,8 +20,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Trash2, Loader2, AlertCircle, CheckCircle, Music, AlertTriangle } from "lucide-react"
-import { api, type DuplicateDeletionResult } from "@/lib/api"
+import { type DuplicateDeletionResult, createApiWithUser } from "@/lib/api" // Fixed import path
+
 import { SpotifyAuth } from "@/components/spotify-auth"
+import { ErrorNotification } from "@/components/error-notification"
+import { useUserStore } from "@/lib/user-store" // Fixed import path
 
 export default function DuplicateDeletionPage() {
   const [playlistUrl, setPlaylistUrl] = useState("")
@@ -29,6 +32,8 @@ export default function DuplicateDeletionPage() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [result, setResult] = useState<DuplicateDeletionResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showErrorNotification, setShowErrorNotification] = useState(false)
+  const { userId } = useUserStore()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,15 +48,25 @@ export default function DuplicateDeletionPage() {
     setError(null)
     setResult(null)
 
+    if (!userId) {
+      setError("Please authenticate with Spotify first")
+      return
+    }
+
     try {
-      const response = await api.deleteDuplicates(playlistUrl)
+      const apiWithUser = createApiWithUser(userId)
+      const response = await apiWithUser.deleteDuplicates(playlistUrl)
       if (response.success && response.data) {
         setResult(response.data)
       } else {
         setError(response.error || "Failed to delete duplicates")
+        if (response.error?.includes("Do you have authorization?")) {
+          setShowErrorNotification(true)
+        }
       }
     } catch (err) {
       setError("An unexpected error occurred")
+      setShowErrorNotification(true)
     } finally {
       setIsLoading(false)
     }
@@ -61,6 +76,7 @@ export default function DuplicateDeletionPage() {
     setPlaylistUrl("")
     setResult(null)
     setError(null)
+    setShowErrorNotification(false)
   }
 
   return (
@@ -238,6 +254,7 @@ export default function DuplicateDeletionPage() {
             </Card>
           </div>
         )}
+        <ErrorNotification show={showErrorNotification} onClose={() => setShowErrorNotification(false)} />    
       </div>
     </PageLayout>
   )

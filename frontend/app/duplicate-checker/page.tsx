@@ -13,13 +13,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle, Download, Loader2, AlertCircle, Music, Users } from "lucide-react"
 import { api, type DuplicateCheckResult } from "@/lib/api"
 import { SpotifyAuth } from "@/components/spotify-auth"
+import { ErrorNotification } from "@/components/error-notification" // Added error notification
 
 export default function DuplicateCheckerPage() {
   const [playlistUrl, setPlaylistUrl] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<DuplicateCheckResult | null>(null)
   const [error, setError] = useState<string | null>(null)
-
+  const [showErrorNotification, setShowErrorNotification] = useState(false) // Added error notification state
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!playlistUrl.trim()) return
@@ -34,9 +35,13 @@ export default function DuplicateCheckerPage() {
         setResult(response.data)
       } else {
         setError(response.error || "Failed to check duplicates")
+        if (response.error?.includes("Do you have authorization?")) {
+          setShowErrorNotification(true)
+        }
       }
     } catch (err) {
       setError("An unexpected error occurred")
+      setShowErrorNotification(true) // Show error notification for unexpected errors
     } finally {
       setIsLoading(false)
     }

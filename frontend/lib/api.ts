@@ -214,7 +214,7 @@ export const formatError = (error: unknown): string => {
       case "HTTP_429":
         return "Too many requests. Please wait a moment and try again."
       case "HTTP_500":
-        return "Server error. Please try again later."
+        return "Do you have authorization? Please try to authenticate."
       case "NETWORK_ERROR":
         return "Network connection failed. Please check your internet connection."
       default:
@@ -316,6 +316,7 @@ export const enhancedApi = {
   async filterExplicitContent(
     playlistUrl: string,
     mode: "metadata" | "lyrics",
+    customWords: string[] = [],
     options?: ApiRequestOptions,
   ): Promise<ApiResponse<ExplicitFilterResult>> {
     const validation = validatePlaylistUrl(playlistUrl)
@@ -335,6 +336,7 @@ export const enhancedApi = {
         body: JSON.stringify({
           playlist_id: validation.playlistId,
           mode,
+          extra_banned_words: customWords,
         }),
       })
 

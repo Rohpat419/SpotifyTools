@@ -12,9 +12,24 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
-import { Filter, Loader2, AlertCircle, CheckCircle, Music, Users, Shield, Plus, Trash2, Info } from "lucide-react"
-import { api, type ExplicitFilterResult } from "@/lib/api"
+import { type ExplicitFilterResult, createApiWithUser } from "@/lib/api"
 import { SpotifyAuth } from "@/components/spotify-auth"
+import { useUserStore } from "@/lib/user-store"
+import { CustomWordsModal } from "@/components/custom-words-modal"
+import { ErrorNotification } from "@/components/error-notification"
+import {
+  Filter,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  Music,
+  Users,
+  Shield,
+  Plus,
+  Trash2,
+  Info,
+  Settings,
+} from "lucide-react"
 
 type FilterMode = "metadata" | "lyrics"
 type ActionType = "none" | "create_clean" | "remove_explicit"
@@ -22,16 +37,25 @@ type ActionType = "none" | "create_clean" | "remove_explicit"
 export default function ExplicitFilterPage() {
   const [playlistUrl, setPlaylistUrl] = useState("")
   const [mode, setMode] = useState<FilterMode>("metadata")
+  const [customWords, setCustomWords] = useState<string[]>([])
+  const [showCustomWordsModal, setShowCustomWordsModal] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [result, setResult] = useState<ExplicitFilterResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [selectedAction, setSelectedAction] = useState<ActionType>("none")
   const [actionResult, setActionResult] = useState<string | null>(null)
-
+  const [showErrorNotification, setShowErrorNotification] = useState(false)
+  const { userId } = useUserStore()
+  
   const handleScan = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!playlistUrl.trim()) return
+
+    if (!userId) {
+      setError("Please authenticate with Spotify first")
+      return
+    }
 
     setIsScanning(true)
     setError(null)
@@ -39,14 +63,19 @@ export default function ExplicitFilterPage() {
     setActionResult(null)
 
     try {
-      const response = await api.filterExplicitContent(playlistUrl, mode)
+      const api = createApiWithUser(userId)
+      const response = await api.filterExplicitContent(playlistUrl, mode, customWords)
       if (response.success && response.data) {
         setResult(response.data)
       } else {
         setError(response.error || "Failed to scan for explicit content")
+        if (response.error?.includes("Do you have authorization?")) {
+          setShowErrorNotification(true)
+        }
       }
     } catch (err) {
       setError("An unexpected error occurred")
+      setShowErrorNotification(true)
     } finally {
       setIsScanning(false)
     }
@@ -89,10 +118,13 @@ export default function ExplicitFilterPage() {
   const resetForm = () => {
     setPlaylistUrl("")
     setMode("metadata")
+    setCustomWords([])
     setResult(null)
     setError(null)
     setSelectedAction("none")
     setActionResult(null)
+    setShowCustomWordsModal(false)
+    setShowErrorNotification(false)
   }
 
   return (
@@ -174,6 +206,35 @@ export default function ExplicitFilterPage() {
                 </RadioGroup>
               </div>
 
+              {mode === "lyrics" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Custom Words</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowCustomWordsModal(true)}
+                      disabled={isScanning}
+                    >
+                      <Settings className="mr-2 h-4 w-4" />
+                      Add Custom Words
+                    </Button>
+                  </div>
+                  {customWords.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {customWords.map((word) => (
+                        <Badge key={word} variant="secondary">
+                          {word}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    Add additional words to check for in lyrics analysis beyond the default explicit content detection.
+                  </p>
+                </div>
+              )}
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button type="submit" disabled={!playlistUrl.trim() || isScanning}>
                   {isScanning ? (
@@ -383,6 +444,16 @@ export default function ExplicitFilterPage() {
           </div>
         )}
       </div>
+      {/* Custom Words Modal */}
+      <CustomWordsModal
+        isOpen={showCustomWordsModal}
+        onClose={() => setShowCustomWordsModal(false)}
+        onConfirm={setCustomWords}
+        initialWords={customWords}
+      />
+
+      {/* Error Notification */}
+      <ErrorNotification show={showErrorNotification} onClose={() => setShowErrorNotification(false)} />
     </PageLayout>
   )
 }
