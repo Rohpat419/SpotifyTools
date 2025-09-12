@@ -92,12 +92,11 @@ default_db_url = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'db.sqlite3'}
 
 DATABASES = {
     "default": dj_database_url.config(
-        default=default_db_url,
+        env="DATABASE_URL",
         conn_max_age=600,
-        ssl_require=default_db_url.startswith("postgres://") or default_db_url.startswith("postgresql://"),
+        ssl_require=True,
     )
 }
-
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
