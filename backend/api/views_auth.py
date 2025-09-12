@@ -83,6 +83,7 @@ def login(request):
         "code_challenge_method": "S256",
     }
     return HttpResponseRedirect(f"{AUTH_URL}?{urlencode(params)}")
+
 def callback(request):
     error = request.GET.get("error")
     if error:
@@ -101,7 +102,7 @@ def callback(request):
             return JsonResponse({"error": "Expired state"}, status=400)
         code_verifier = pkce.code_verifier
     except PKCEState.DoesNotExist:
-        # If state already consumed, just redirect to success instead of error
+        # Already consumed or missing → treat as replay, redirect gracefully
         return HttpResponseRedirect(f"{FRONTEND_SUCCESS_URL}?ok=1&replay=1")
 
     # --- Prepare token exchange ---
@@ -120,7 +121,7 @@ def callback(request):
     if r.status_code != 200:
         print("DEBUG Spotify token exchange failed:", r.status_code, r.text)
         if "invalid_grant" in r.text:
-            # Code already used: still redirect gracefully
+            # Code already used → graceful replay
             return HttpResponseRedirect(f"{FRONTEND_SUCCESS_URL}?ok=1&replay=1")
         return JsonResponse({"error": "Token exchange failed", "details": r.text}, status=500)
 
@@ -141,19 +142,25 @@ def callback(request):
         return JsonResponse({"error": "No access token in response", "details": sanitized_tok}, status=500)
 
     # --- Save tokens (dummy user until real auth implemented) ---
-    user, _ = User.objects.get_or_create(username="testuser")
-    expires_at = timezone.now() + timedelta(seconds=tok["expires_in"])
-    SpotifyToken.objects.update_or_create(
-        user=user,
-        defaults={
-            "access_token": tok["access_token"],
-            "refresh_token": tok.get("refresh_token", ""),
-            "expires_at": expires_at,
-            "scope": tok.get("scope", ""),
-        },
-    )
+    try:
+        user, _ = User.objects.get_or_create(username="testuser")
+        expires_at = timezone.now() + timedelta(seconds=tok["expires_in"])
+        obj, created = SpotifyToken.objects.update_or_create(
+            user=user,
+            defaults={
+                "access_token": tok["access_token"],
+                "refresh_token": tok.get("refresh_token", ""),
+                "expires_at": expires_at,
+                "scope": tok.get("scope", ""),
+            },
+        )
+        print("DEBUG SpotifyToken saved:", obj.id, "created?", created)
+    except Exception as e:
+        import traceback
+        print("ERROR saving SpotifyToken:", str(e))
+        traceback.print_exc()
+        return JsonResponse({"error": "DB save failed", "details": str(e)}, status=500)
 
-    return HttpResponseRedirect(f"{FRONTEND_SUCCESS_URL}?ok=1")
 
 
 def auth_success(request):
