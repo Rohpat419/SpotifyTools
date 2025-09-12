@@ -6,9 +6,6 @@ services:
     rootDir: backend
     buildCommand: pip install -r requirements.txt && ./build.sh
     startCommand: | 
-      initdb -D ./pgdata
-      pg_ctl -D ./pgdata -o "-p 5432" -l logfile start
-      createdb appdb
       python manage.py migrate
       gunicorn spotifytools_backend.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
