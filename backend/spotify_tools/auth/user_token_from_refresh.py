@@ -33,15 +33,14 @@ def _load_refresh_token() -> str:
 
 
 def _save_refresh_token(new_refresh: str) -> None:
-    """Persist a new refresh token if Spotify rotates it."""
+    """Persist a new refresh token if Spotify rotates it (overwrite file)."""
+    data = {"refresh_token": new_refresh}
     try:
-        with open(TOKEN_PATH, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except FileNotFoundError:
-        data = {}
-    data["refresh_token"] = new_refresh
-    with open(TOKEN_PATH, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+        with open(TOKEN_PATH, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"[user_token] Failed to save refresh token: {e}")
+
 
 
 def get_user_access_token() -> str:

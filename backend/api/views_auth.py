@@ -90,8 +90,15 @@ def callback(request):
 
     tok = r.json()
 
-    # Save refresh token for this user (TODO: tie to user identity)
     save_path = os.getenv("SPOTIFY_TOKEN_PATH", settings.BASE_DIR / "spotify_tokens.json")
+
+    # Always recreate the file fresh
+    try:
+        if os.path.exists(save_path):
+            os.remove(save_path)
+    except Exception as e:
+        print(f"[callback] Could not remove old token file: {e}")
+
     with open(save_path, "w", encoding="utf-8") as f:
         json.dump(tok, f, indent=2)
 
