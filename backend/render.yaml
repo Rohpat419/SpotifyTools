@@ -16,8 +16,6 @@ services:
         value: 3.11
       - key: SPOTIFY_CLIENT_ID
         sync: false
-      - key: DATABASE_URL
-        value: postgres://postgres:postgres@localhost:5432/appdb 
       - key: SPOTIFY_CLIENT_SECRET
         sync: false
       - key: SPOTIFY_REDIRECT_URI
