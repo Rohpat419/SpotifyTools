@@ -66,7 +66,7 @@ export default function DuplicateDeletionPage() {
   return (
     <PageLayout
       title="Duplicate Deletion"
-      description="Remove duplicate tracks from your Spotify playlists with smart confirmation and detailed summaries."
+      description="Remove duplicate tracks from your Spotify playlists."
     >
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Spotify Authentication Component */}
@@ -74,7 +74,7 @@ export default function DuplicateDeletionPage() {
           requiredFor={[
             "Accessing private playlists",
             "Modifying playlist contents",
-            "Permanently deleting duplicate tracks",
+            "PERMANENTLY deleting duplicate tracks",
           ]}
         />
 

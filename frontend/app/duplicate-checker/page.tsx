@@ -75,11 +75,11 @@ export default function DuplicateCheckerPage() {
   return (
     <PageLayout
       title="Duplicate Checker"
-      description="Identify and analyze duplicate tracks in your Spotify playlists with detailed grouping and export options."
+      description="Identify and analyze duplicate tracks in your Spotify playlists."
     >
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Spotify Authentication Component */}
-        <SpotifyAuth requiredFor={["Accessing private playlists", "Reading playlist metadata and track information"]} />
+        <SpotifyAuth requiredFor={["Accessing private playlists", "Modifying Playlists"]} />
 
         {/* Input Form */}
         <Card>

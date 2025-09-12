@@ -20,7 +20,7 @@ const dmSans = DM_Sans({
 })
 
 export const metadata: Metadata = {
-  title: "SpotifyTools - Professional Playlist Management",
+  title: "SpotifyTools - What I wish Spotify had",
   description: "Advanced Spotify playlist management tools for duplicate checking, content filtering, and analytics",
   generator: "v0.app",
 }

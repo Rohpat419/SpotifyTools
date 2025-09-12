@@ -9,7 +9,7 @@ export default function HomePage() {
   const features = [
     {
       title: "Duplicate Checker",
-      description: "Identify and analyze duplicate tracks in your playlists with detailed grouping and export options.",
+      description: "Identify and analyze duplicate tracks in your playlists.",
       icon: CheckCircle,
       href: "/duplicate-checker",
       color: "bg-chart-1",
@@ -17,7 +17,7 @@ export default function HomePage() {
     },
     {
       title: "Duplicate Deletion",
-      description: "Remove duplicate tracks from your playlists with smart confirmation and detailed summaries.",
+      description: "Remove duplicate tracks from your playlists.",
       icon: Trash2,
       href: "/duplicate-deletion",
       color: "bg-chart-2",
@@ -25,7 +25,7 @@ export default function HomePage() {
     },
     {
       title: "Explicit Content Filter",
-      description: "Scan and filter explicit content using metadata or lyrics analysis with flexible actions.",
+      description: "Scan and filter explicit content using metadata or lyrics analysis.",
       icon: Filter,
       href: "/explicit-filter",
       color: "bg-chart-3",
@@ -33,7 +33,7 @@ export default function HomePage() {
     },
     {
       title: "Top Tracks & Artists",
-      description: "Discover your listening patterns with detailed analytics across different time periods.",
+      description: "Discover your listening patterns with analytics across different time periods.",
       icon: BarChart3,
       href: "/top-tracks",
       color: "bg-chart-4",
@@ -55,7 +55,7 @@ export default function HomePage() {
                 SpotifyTools
               </h1>
               <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto text-pretty leading-relaxed">
-                Spotify user experience enhancement suite featuring duplicate detection, content filtering, and comprehensive analytics for professional music curation.
+                Spotify user experience enhancement suite featuring duplicate detection, content filtering, and comprehensive analytics for an extended Spotify experience.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" className="text-base font-medium" asChild>
@@ -78,7 +78,7 @@ export default function HomePage() {
             <div className="text-center mb-16">
               <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground mb-4">Powerful Features</h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-pretty">
-                Comprehensive tools designed for professional playlist management and music curation workflows.
+                Toolset designed for extending the native functionality of Spotify.
               </p>
             </div>
 

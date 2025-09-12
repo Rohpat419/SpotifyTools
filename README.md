@@ -18,9 +18,21 @@ Multi-user support. Right now, the backend only supports one user since the refr
 
 Conduct a security review of the entire system, patch accordingly. Testing different strings in the input boxes. Seeing if secrets or tokens get leaked at any point. 
 
+Allow users to choose which duplicate songs to delete instead of deleting all duplicates. This would require an interactive frontend component. 
+
+The Duplicate Deletion tab COULD be replaced by a Duplicate Checker tab with better UX. The user is shown the duplicates and is given a flow to delete the duplicates of their choosing. 
+
+Give users the option to input their own "banned words" list to extend the functionality of the explicit content filter.
+
+Light / dark mode toggle for the frontend. Every developer's favorite feature.
+
+Fetching a user's playlist and letting them choose which one to filter for explicit content or find duplicates in. Right now, the user has to input the playlist id manually. This would be displayed on the frontend and then they would choose the playlist and what tool to apply. 
+
 Incorporate more user analytics (other than just top n tracks/artists for a time horizon) but this would require the user to download and upload their data. Since the Spotify Web API does not give an endpoint for this data. 
 
 Build an email notification system to alert users when followed artists release new music (Spotify’s own system is biased toward popular artists).
+
+Handle edge cases better and give better responses to the user. Right now any error on the server side is returned as a 500 without any context which is bad UX. Sometimes the API call to Spotify fails, sometimes it actually is a backend logic error, sometimes the user just needs to refresh, they will never know. 
 
 Allow users to prompt an AI to suggest a song/playlist/artist that fits a certain vibe based on the music they already listen to. This would be very difficult since Spotify does not allow developers to send data returned by the Web API to any AI models for ingestion as they may be trained on that data ([Spotify Developer Terms, Section IV: Restrictions](https://developer.spotify.com/terms#section-iv-restrictions)).
 The solution to this would be a local GPT model which is quite a bit of work to prepare, train, and host. 
