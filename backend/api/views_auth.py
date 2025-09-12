@@ -42,7 +42,7 @@ def save_state(state, verifier):
     except Exception as e:
         print("Save state error:", e)
 
-def load_state(state):
+def load_state_once(state):
     try:
         entry = PKCEState.objects.get(state=state)
         if entry.is_expired():
@@ -51,6 +51,7 @@ def load_state(state):
         return {"verifier": entry.code_verifier}
     except PKCEState.DoesNotExist:
         return None
+
 
 def login(request):
     # Generate PKCE values
@@ -82,7 +83,6 @@ def login(request):
         "code_challenge_method": "S256",
     }
     return HttpResponseRedirect(f"{AUTH_URL}?{urlencode(params)}")
-
 def callback(request):
     error = request.GET.get("error")
     if error:
@@ -93,16 +93,16 @@ def callback(request):
     if not code or not state:
         return JsonResponse({"error": "Missing code/state"}, status=400)
 
-    # --- Load and validate PKCE verifier from DB ---
+    # --- Load PKCE verifier from DB ---
     try:
         pkce = PKCEState.objects.get(state=state)
         if pkce.is_expired():
             pkce.delete()
             return JsonResponse({"error": "Expired state"}, status=400)
         code_verifier = pkce.code_verifier
-        pkce.delete()  # one-time use
     except PKCEState.DoesNotExist:
-        return JsonResponse({"error": "Invalid state"}, status=400)
+        # If state already consumed, just redirect to success instead of error
+        return HttpResponseRedirect(f"{FRONTEND_SUCCESS_URL}?ok=1&replay=1")
 
     # --- Prepare token exchange ---
     data = {
@@ -119,12 +119,15 @@ def callback(request):
     r = requests.post(TOKEN_URL, data=data, timeout=30)
     if r.status_code != 200:
         print("DEBUG Spotify token exchange failed:", r.status_code, r.text)
-        # If code was already used, just redirect to frontend success
         if "invalid_grant" in r.text:
-            return HttpResponseRedirect(f"{FRONTEND_SUCCESS_URL}?ok=1")
+            # Code already used: still redirect gracefully
+            return HttpResponseRedirect(f"{FRONTEND_SUCCESS_URL}?ok=1&replay=1")
         return JsonResponse({"error": "Token exchange failed", "details": r.text}, status=500)
 
     tok = r.json()
+
+    # --- Delete state after successful exchange ---
+    pkce.delete()
 
     # --- Log response safely ---
     sanitized_tok = tok.copy()
@@ -150,8 +153,8 @@ def callback(request):
         },
     )
 
-    # --- Redirect to frontend success ---
     return HttpResponseRedirect(f"{FRONTEND_SUCCESS_URL}?ok=1")
+
 
 def auth_success(request):
     return HttpResponse("<h1> DEV Spotify login successful!</h1><p>You may close this tab now.</p>")
