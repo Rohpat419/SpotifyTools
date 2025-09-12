@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+
 import { useState } from "react"
 import { PageLayout } from "@/components/page-layout"
 import { Button } from "@/components/ui/button"
@@ -19,10 +20,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Trash2, Loader2, AlertCircle, CheckCircle, Music, AlertTriangle } from "lucide-react"
-import { type DuplicateDeletionResult, createApiWithUser } from "@/lib/api" // Fixed import path
+import { api, type DuplicateDeletionResult } from "@/lib/api"
 import { SpotifyAuth } from "@/components/spotify-auth"
-import { ErrorNotification } from "@/components/error-notification"
-import { useUserStore } from "@/lib/user-store" // Fixed import path
 
 export default function DuplicateDeletionPage() {
   const [playlistUrl, setPlaylistUrl] = useState("")
@@ -30,8 +29,6 @@ export default function DuplicateDeletionPage() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [result, setResult] = useState<DuplicateDeletionResult | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [showErrorNotification, setShowErrorNotification] = useState(false)
-  const { userId } = useUserStore()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,25 +43,15 @@ export default function DuplicateDeletionPage() {
     setError(null)
     setResult(null)
 
-    if (!userId) {
-      setError("Please authenticate with Spotify first")
-      return
-    }
-
     try {
-      const apiWithUser = createApiWithUser(userId)
-      const response = await apiWithUser.deleteDuplicates(playlistUrl)
+      const response = await api.deleteDuplicates(playlistUrl)
       if (response.success && response.data) {
         setResult(response.data)
       } else {
         setError(response.error || "Failed to delete duplicates")
-        if (response.error?.includes("Do you have authorization?")) {
-          setShowErrorNotification(true)
-        }
       }
     } catch (err) {
       setError("An unexpected error occurred")
-      setShowErrorNotification(true)
     } finally {
       setIsLoading(false)
     }
@@ -74,7 +61,6 @@ export default function DuplicateDeletionPage() {
     setPlaylistUrl("")
     setResult(null)
     setError(null)
-    setShowErrorNotification(false)
   }
 
   return (
@@ -83,6 +69,7 @@ export default function DuplicateDeletionPage() {
       description="Remove duplicate tracks from your Spotify playlists with smart confirmation and detailed summaries."
     >
       <div className="max-w-4xl mx-auto space-y-8">
+        {/* Spotify Authentication Component */}
         <SpotifyAuth
           requiredFor={[
             "Accessing private playlists",
@@ -91,6 +78,7 @@ export default function DuplicateDeletionPage() {
           ]}
         />
 
+        {/* Warning Notice */}
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
@@ -99,6 +87,7 @@ export default function DuplicateDeletionPage() {
           </AlertDescription>
         </Alert>
 
+        {/* Input Form */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -149,6 +138,7 @@ export default function DuplicateDeletionPage() {
           </CardContent>
         </Card>
 
+        {/* Confirmation Dialog */}
         <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -173,6 +163,7 @@ export default function DuplicateDeletionPage() {
           </AlertDialogContent>
         </AlertDialog>
 
+        {/* Error Display */}
         {error && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -180,8 +171,10 @@ export default function DuplicateDeletionPage() {
           </Alert>
         )}
 
+        {/* Success Results */}
         {result && (
           <div className="space-y-6">
+            {/* Success Message */}
             <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
               <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
               <AlertDescription className="text-green-800 dark:text-green-200">
@@ -189,6 +182,7 @@ export default function DuplicateDeletionPage() {
               </AlertDescription>
             </Alert>
 
+            {/* Deletion Summary */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -203,10 +197,11 @@ export default function DuplicateDeletionPage() {
                     <div className="text-3xl font-bold text-muted-foreground mb-2">{result.original}</div>
                     <div className="text-sm text-muted-foreground">Original Tracks</div>
                   </div>
-                  <div className="text-center p-6 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+                  {/* Tracks kept is a confusing metric */}
+                  {/* <div className="text-center p-6 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
                     <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">{result.kept}</div>
                     <div className="text-sm text-green-700 dark:text-green-300">Tracks Kept</div>
-                  </div>
+                  </div> */}
                   <div className="text-center p-6 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
                     <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">{result.removed}</div>
                     <div className="text-sm text-red-700 dark:text-red-300">Tracks Removed</div>
@@ -215,6 +210,7 @@ export default function DuplicateDeletionPage() {
               </CardContent>
             </Card>
 
+            {/* Next Steps */}
             <Card>
               <CardHeader>
                 <CardTitle>What's Next?</CardTitle>
@@ -242,8 +238,6 @@ export default function DuplicateDeletionPage() {
             </Card>
           </div>
         )}
-
-        <ErrorNotification show={showErrorNotification} onClose={() => setShowErrorNotification(false)} />
       </div>
     </PageLayout>
   )

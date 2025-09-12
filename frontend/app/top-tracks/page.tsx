@@ -10,10 +10,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { BarChart3, Loader2, AlertCircle, Music, Users, Calendar, Trophy, Play } from "lucide-react"
-import { createApiWithUser, type TopItemsResult } from "@/lib/api" // Fixed import path and added missing type
+import { api, type TopTrackResponse, type TopArtistResponse } from "@/lib/api"
 import { SpotifyAuth } from "@/components/spotify-auth"
-import { ErrorNotification } from "@/components/error-notification"
-import { useUserStore } from "@/lib/user-store" // Fixed import path
 
 type TimeRange = "4_weeks" | "6_months" | "all_time"
 type ContentType = "tracks" | "artists"
@@ -22,11 +20,9 @@ export default function TopTracksPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>("4_weeks")
   const [contentType, setContentType] = useState<ContentType>("tracks")
   const [isLoading, setIsLoading] = useState(false)
-  const [tracks, setTracks] = useState<TopItemsResult | null>(null) // Updated type
-  const [artists, setArtists] = useState<TopItemsResult | null>(null) // Updated type
+  const [tracks, setTracks] = useState<TopTrackResponse | null>(null)
+  const [artists, setArtists] = useState<TopArtistResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [showErrorNotification, setShowErrorNotification] = useState(false)
-  const { userId } = useUserStore()
 
   const timeRangeLabels = {
     "4_weeks": "Last 4 Weeks",
@@ -35,42 +31,29 @@ export default function TopTracksPage() {
   }
 
   const loadData = async () => {
-    if (!userId) {
-      setError("Please authenticate with Spotify first")
-      return
-    }
-
     setIsLoading(true)
     setError(null)
 
     try {
-      const apiWithUser = createApiWithUser(userId)
       if (contentType === "tracks") {
-        const response = await apiWithUser.getTopTracks(timeRange)
+        const response = await api.getTopTracks(timeRange)
         if (response.success && response.data) {
           setTracks(response.data)
           setArtists(null)
         } else {
           setError(response.error || "Failed to load top tracks")
-          if (response.error?.includes("Do you have authorization?")) {
-            setShowErrorNotification(true)
-          }
         }
       } else {
-        const response = await apiWithUser.getTopArtists(timeRange)
+        const response = await api.getTopArtists(timeRange)
         if (response.success && response.data) {
           setArtists(response.data)
           setTracks(null)
         } else {
           setError(response.error || "Failed to load top artists")
-          if (response.error?.includes("Do you have authorization?")) {
-            setShowErrorNotification(true)
-          }
         }
       }
     } catch (err) {
       setError("An unexpected error occurred")
-      setShowErrorNotification(true)
     } finally {
       setIsLoading(false)
     }
@@ -338,9 +321,6 @@ export default function TopTracksPage() {
             </CardContent>
           </Card>
         )}
-
-        {/* Error Notification */}
-        <ErrorNotification show={showErrorNotification} onClose={() => setShowErrorNotification(false)} />
       </div>
     </PageLayout>
   )

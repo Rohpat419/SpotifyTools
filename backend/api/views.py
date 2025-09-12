@@ -41,18 +41,14 @@ def remove_tracks(request):
     try:
         playlist_id = request.data.get("playlist_id")
         uris = request.data.get("uris", [])
-
-        # Validate input
-        if not playlist_id or not isinstance(uris, list) or not all(isinstance(u, str) for u in uris):
+        if not playlist_id or not isinstance(uris, list) or not uris:
             return Response(
-                {"detail": "playlist_id and uris[] (list of strings) required"},
+                {"detail": "playlist_id and non-empty uris[] required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
         client = SpotifyClient()
         client.remove_by_uri(playlist_id, uris)
         return Response({"removed_count": len(uris), "removed_uris": uris})
-
     except Exception as e:
         print(f"[remove_tracks] Error: {e}")
         return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
