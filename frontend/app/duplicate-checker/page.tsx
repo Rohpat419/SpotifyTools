@@ -155,8 +155,8 @@ export default function DuplicateCheckerPage() {
               </CardContent>
             </Card>
 
-            {/* Export Options */}
-            {result.groups.length > 0 && (
+            {/* Export Options. Don't export for now */}
+            {/* {result.groups.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -178,7 +178,7 @@ export default function DuplicateCheckerPage() {
                   </div>
                 </CardContent>
               </Card>
-            )}
+            )} */}
 
             {/* Duplicate Groups */}
             {result.groups.length > 0 ? (
@@ -203,8 +203,8 @@ export default function DuplicateCheckerPage() {
                             </div>
                           </div>
                           <Badge variant="secondary" className="ml-4">
-                            {Math.floor(group[2] / 1000 / 60)}:
-                            {String(Math.floor((group[2] / 1000) % 60)).padStart(2, "0")}
+                            {Math.floor(group[2] / 60)}:
+                            {String(Math.floor((group[2]) % 60)).padStart(2, "0")}
                           </Badge>
                         </div>
                       </div>
