@@ -11,8 +11,8 @@ This repo contains a fullstack web application that reimplements the features of
 - **Top N Tracks/Artists** for a time horizon of your choosing (last month, last 6 months, all time)
 
 ## Hosting
-- **Frontend:** Hosted on Vercel → [Live App](https://spotify-tools-xi.vercel.app/)
-- **Backend:** Hosted on Render → [Health Check](https://spotify-tools-eozl.onrender.com/api/debug/ping)
+- **Frontend:** Hosted on Vercel → [Live App](https://spotify-tools-xi.vercel.app/). Built using [v0](https://v0.app/chat). 
+- **Backend:** Hosted on Render → [Health Check](https://spotify-tools-eozl.onrender.com/api/debug/ping). Built with the help of [GPT-5](https://chat.openai.com/).
 
 ## Future Steps: 
 
