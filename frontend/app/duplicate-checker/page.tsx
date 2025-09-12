@@ -145,7 +145,7 @@ export default function DuplicateCheckerPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="text-center p-4 bg-muted/50 rounded-lg">
                     <div className="text-2xl font-bold text-destructive">{result.count}</div>
-                    <div className="text-sm text-muted-foreground">Duplicate Groups</div>
+                    <div className="text-sm text-muted-foreground mx-auto" >Duplicate Groups</div>
                   </div>
                   {/* Currently endpoint does not actually return the number of duplicate songs */}
                   {/* <div className="text-center p-4 bg-muted/50 rounded-lg">

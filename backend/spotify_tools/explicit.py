@@ -130,7 +130,7 @@ def explicit_report_from_playlist(
                         "name": name,
                         "artists": artists,
                         "uri": uri,
-                        "reason": f"lyrics_banned_words:{','.join(hits)}"
+                        "reason": f"lyrics contain banned words:{','.join(hits)}"
                     })
             elif not lyrics:
                 print("Lyrics could not be found for the following song:")

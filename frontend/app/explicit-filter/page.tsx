@@ -301,7 +301,8 @@ export default function ExplicitFilterPage() {
                     onValueChange={(value) => setSelectedAction(value as ActionType)}
                     disabled={isProcessing}
                   >
-                    <div className="flex items-center space-x-2">
+                    {/* Don't give a Do Nothing option to user, unnecessary */}
+                    {/* <div className="flex items-center space-x-2">
                       <RadioGroupItem value="none" id="none" />
                       <Label htmlFor="none" className="flex-1 cursor-pointer">
                         <div className="flex items-start gap-3">
@@ -312,7 +313,7 @@ export default function ExplicitFilterPage() {
                           </div>
                         </div>
                       </Label>
-                    </div>
+                    </div> */}
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="create_clean" id="create_clean" />
                       <Label htmlFor="create_clean" className="flex-1 cursor-pointer">
