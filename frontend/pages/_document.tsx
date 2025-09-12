@@ -6,10 +6,10 @@ export default function Document() {
     <Html lang="en">
       <Head>
         {/* Favicon for browser tab */}
-        <link rel="icon" href="/favicon.png" />
+        <link rel="icon" href="/favicon.ico" />
 
         {/* Optional: better support for Apple/Android */}
-        <link rel="apple-touch-icon" href="/favicon.png" />
+        <link rel="apple-touch-icon" href="/favicon.ico" />
       </Head>
       <body>
         <Main />
