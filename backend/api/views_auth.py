@@ -109,21 +109,26 @@ def callback(request):
 
     print("DEBUG Spotify token exchange response:", sanitized_tok)
     # Example: tie everything to a dummy user until you have real auth
-    user, _ = User.objects.get_or_create(username="testuser")
+    # --- PREVENT reuse ---
+    if "access_token" in tok:
+        # Save tokens as you already do...
+        user, _ = User.objects.get_or_create(username="testuser")
+        expires_at = timezone.now() + timedelta(seconds=tok["expires_in"])
+        SpotifyToken.objects.update_or_create(
+            user=user,
+            defaults={
+                "access_token": tok["access_token"],
+                "refresh_token": tok.get("refresh_token", ""),
+                "expires_at": expires_at,
+                "scope": tok.get("scope", ""),
+            }
+        )
 
-    expires_at = timezone.now() + timedelta(seconds=tok["expires_in"])
-    SpotifyToken.objects.update_or_create(
-        user=user,
-        defaults={
-            "access_token": tok["access_token"],
-            "refresh_token": tok["refresh_token"],
-            "expires_at": expires_at,
-            "scope": tok.get("scope", ""),
-        }
-    )
-
-    frontend_url = os.getenv("FRONTEND_SUCCESS_URL", "http://localhost:3000/auth/success")
-    return HttpResponseRedirect(f"{frontend_url}?ok=1")
+        # Redirect right away, so /callback can't be refreshed
+        frontend_url = os.getenv("FRONTEND_SUCCESS_URL", "http://localhost:3000/auth/success")
+        return HttpResponseRedirect(f"{frontend_url}?ok=1")
+    # Edge case: no access_token in Spotify’s response
+    return JsonResponse({"error": "No access token in response", "details": tok}, status=500)
 
 def auth_success(request):
     return HttpResponse("<h1> DEV Spotify login successful!</h1><p>You may close this tab now.</p>")
