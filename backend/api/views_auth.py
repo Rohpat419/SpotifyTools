@@ -49,7 +49,7 @@ def login(request):
     state = secrets.token_urlsafe(16)
     # PKCE_CACHE[state] = {"verifier": code_verifier, "ts": time.time()}
     save_state(state, code_verifier)
-
+    print("redirect uri", REDIRECT_URI)
     params = {
         "client_id": CLIENT_ID,
         "response_type": "code",
