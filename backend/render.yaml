@@ -21,13 +21,11 @@ services:
         value: playlist-modify-private playlist-read-private user-top-read
       - key: FRONTEND_SUCCESS_URL
         value: https://spotify-tools-xi.vercel.app/auth/success
-      - key: TEST_VARIABLE
-        value: test
-      - key: DATABASE_URL
-        fromDatabase:
-          name: spotify_tools_db   # must match your DB service name
-          property: connectionString
       - key: DJANGO_SETTINGS_MODULE
         value: spotifytools_backend.settings
       - key: SECRET_KEY
         generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: spotify_tools_db     # postgres instance also in render.com
+          property: connectionString

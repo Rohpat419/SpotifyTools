@@ -14,7 +14,7 @@ from pathlib import Path
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth.models import User
-from api.models import SpotifyToken, PKCEState
+from api.models import SpotifyToken
 
 AUTH_URL  = "https://accounts.spotify.com/authorize"
 TOKEN_URL = "https://accounts.spotify.com/api/token"
@@ -23,8 +23,6 @@ CLIENT_ID     = os.getenv("SPOTIFY_CLIENT_ID")
 CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")   # used only on backend
 REDIRECT_URI  = os.getenv("SPOTIFY_REDIRECT_URI")    # e.g. https://your-backend.onrender.com/api/auth/callback
 SCOPES        = os.getenv("SPOTIFY_SCOPES", "playlist-modify-private playlist-read-private user-top-read")
-
-FRONTEND_SUCCESS_URL = os.getenv("FRONTEND_SUCCESS_URL", "http://localhost:3000/auth/success")
 
 # In-memory PKCE cache (replace with DB/Redis for production multi-instance)
 # PKCE_CACHE = {}
@@ -42,37 +40,22 @@ def save_state(state, verifier):
     except Exception as e:
         print("Save state error:", e)
 
-def load_state_once(state):
-    try:
-        entry = PKCEState.objects.get(state=state)
-        if entry.is_expired():
-            entry.delete()
-            return None
-        return {"verifier": entry.code_verifier}
-    except PKCEState.DoesNotExist:
+def load_state(state):
+    if not STATE_FILE.exists():
         return None
-
+    data = json.load(STATE_FILE.open())
+    return data.pop(state, None)
 
 def login(request):
-    # Generate PKCE values
     code_verifier = secrets.token_urlsafe(64)
     code_challenge = base64.urlsafe_b64encode(
         hashlib.sha256(code_verifier.encode()).digest()
     ).rstrip(b"=").decode("utf-8")
 
-    # Generate state and persist verifier in DB
     state = secrets.token_urlsafe(16)
-    try:
-        PKCEState.objects.update_or_create(
-            state=state,
-            defaults={"code_verifier": code_verifier}
-        )
-    except Exception as e:
-        print("DEBUG PKCE DB write failed:", e)
-        return JsonResponse({"error": "PKCE DB write failed", "details": str(e)}, status=500)
+    # PKCE_CACHE[state] = {"verifier": code_verifier, "ts": time.time()}
+    save_state(state, code_verifier)
 
-
-    # Build authorize URL
     params = {
         "client_id": CLIENT_ID,
         "response_type": "code",
@@ -84,6 +67,7 @@ def login(request):
     }
     return HttpResponseRedirect(f"{AUTH_URL}?{urlencode(params)}")
 
+
 def callback(request):
     error = request.GET.get("error")
     if error:
@@ -94,74 +78,57 @@ def callback(request):
     if not code or not state:
         return JsonResponse({"error": "Missing code/state"}, status=400)
 
-    # --- Load PKCE verifier from DB ---
-    try:
-        pkce = PKCEState.objects.get(state=state)
-        if pkce.is_expired():
-            pkce.delete()
-            return JsonResponse({"error": "Expired state"}, status=400)
-        code_verifier = pkce.code_verifier
-    except PKCEState.DoesNotExist:
-        # Already consumed or missing → treat as replay, redirect gracefully
-        return HttpResponseRedirect(f"{FRONTEND_SUCCESS_URL}?ok=1&replay=1")
+    # pkce = PKCE_CACHE.pop(state, None)
+    pkce = load_state(state)
+    if not pkce:
+        return JsonResponse({"error": "Invalid state"}, status=400)
 
-    # --- Prepare token exchange ---
     data = {
         "grant_type": "authorization_code",
         "code": code,
         "redirect_uri": REDIRECT_URI,
         "client_id": CLIENT_ID,
         "client_secret": CLIENT_SECRET,
-        "code_verifier": code_verifier,
+        "code_verifier": pkce["verifier"],
     }
-    print("DEBUG token request (sanitized):",
-          {**data, "code": "<hidden>", "client_secret": "<hidden>", "code_verifier": "<hidden>"})
-
+    print("DEBUG token request data:", data)
     r = requests.post(TOKEN_URL, data=data, timeout=30)
     if r.status_code != 200:
         print("DEBUG Spotify token exchange failed:", r.status_code, r.text)
-        if "invalid_grant" in r.text:
-            # Code already used → graceful replay
-            return HttpResponseRedirect(f"{FRONTEND_SUCCESS_URL}?ok=1&replay=1")
-        return JsonResponse({"error": "Token exchange failed", "details": r.text}, status=500)
-
+        return JsonResponse(
+            {"error": "Token exchange failed", "details": r.text},
+            status=500,
+        )
     tok = r.json()
-
-    # --- Delete state after successful exchange ---
-    pkce.delete()
-
-    # --- Log response safely ---
+    # Log token response (mask sensitive fields)
     sanitized_tok = tok.copy()
     if "access_token" in sanitized_tok:
         sanitized_tok["access_token"] = "<hidden>"
     if "refresh_token" in sanitized_tok:
         sanitized_tok["refresh_token"] = "<hidden>"
+
     print("DEBUG Spotify token exchange response:", sanitized_tok)
-
-    if "access_token" not in tok:
-        return JsonResponse({"error": "No access token in response", "details": sanitized_tok}, status=500)
-
-    # --- Save tokens (dummy user until real auth implemented) ---
-    try:
-        user, _ = User.objects.get_or_create(username="testuser", defaults={"last_login": timezone.now()})
+    # Example: tie everything to a dummy user until you have real auth
+    # --- PREVENT reuse ---
+    if "access_token" in tok:
+        # Save tokens as you already do...
+        user, _ = User.objects.get_or_create(username="testuser")
         expires_at = timezone.now() + timedelta(seconds=tok["expires_in"])
-        obj, created = SpotifyToken.objects.update_or_create(
+        SpotifyToken.objects.update_or_create(
             user=user,
             defaults={
                 "access_token": tok["access_token"],
                 "refresh_token": tok.get("refresh_token", ""),
                 "expires_at": expires_at,
                 "scope": tok.get("scope", ""),
-            },
+            }
         )
-        print("DEBUG SpotifyToken saved:", obj.id, "created?", created)
-    except Exception as e:
-        import traceback
-        print("ERROR saving SpotifyToken:", str(e))
-        traceback.print_exc()
-        return JsonResponse({"error": "DB save failed", "details": str(e)}, status=500)
 
-
+        # Redirect right away, so /callback can't be refreshed
+        frontend_url = os.getenv("FRONTEND_SUCCESS_URL", "http://localhost:3000/auth/success")
+        return HttpResponseRedirect(f"{frontend_url}?ok=1")
+    # Edge case: no access_token in Spotify’s response
+    return JsonResponse({"error": "No access token in response", "details": tok}, status=500)
 
 def auth_success(request):
     return HttpResponse("<h1> DEV Spotify login successful!</h1><p>You may close this tab now.</p>")

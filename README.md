@@ -37,3 +37,5 @@ asking me if my render.yaml was in my backend/ folder (it was).
 - More OAuth issues: Converting to prod was also difficult since now there needed to be a redirect to a page on a frontend on a successful authentication, I couldn't just take the token and give the user no feedback on what just happened. 
 - All the while, AI (GPT-5) didn't know the fixes for what I was dealing with since the Spotify error messages could mean many different errors (for example: "Invalid URL" being returned after signing in to Spotify).  It comes down to training data and the Spotify OAuth flow specifically is fairly niche so it makes sense that GPT-5 struggled with it. 
 
+Logging is a developer's best friend. I think the less logging I had when dealing with an OAuth issue, the longer it took to debug. Adding more logging statements and try/except blocks were extremely important in debugging the errors. Or else the errors would be ridiculously opaque. 
+
