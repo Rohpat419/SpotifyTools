@@ -5,12 +5,19 @@ services:
     plan: free
     rootDir: backend
     buildCommand: pip install -r requirements.txt && ./build.sh
-    startCommand: gunicorn spotifytools_backend.wsgi:application --bind 0.0.0.0:$PORT
+    startCommand: | 
+      initdb -D ./pgdata
+      pg_ctl -D ./pgdata -o "-p 5432" -l logfile start
+      createdb appdb
+      python manage.py migrate
+      gunicorn spotifytools_backend.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11
       - key: SPOTIFY_CLIENT_ID
         sync: false
+      - key: DATABASE_URL
+        value: postgres://postgres:postgres@localhost:5432/appdb 
       - key: SPOTIFY_CLIENT_SECRET
         sync: false
       - key: SPOTIFY_REDIRECT_URI

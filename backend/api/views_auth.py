@@ -5,10 +5,16 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.conf import settings
 from django.http import HttpResponse
 
-# trigger env var loading
+# trigger env var loading, helps in dev, doesn't do anything in prod
 from spotify_tools.config import *
 
 from pathlib import Path
+
+# Support for multiple user tokens
+from django.utils import timezone
+from datetime import timedelta
+from django.contrib.auth.models import User
+from api.models import SpotifyToken
 
 AUTH_URL  = "https://accounts.spotify.com/authorize"
 TOKEN_URL = "https://accounts.spotify.com/api/token"
@@ -90,12 +96,20 @@ def callback(request):
 
     tok = r.json()
 
-    # Save refresh token for this user (TODO: tie to user identity)
-    save_path = os.getenv("SPOTIFY_TOKEN_PATH", settings.BASE_DIR / "spotify_tokens.json")
-    with open(save_path, "w", encoding="utf-8") as f:
-        json.dump(tok, f, indent=2)
+    # Example: tie everything to a dummy user until you have real auth
+    user, _ = User.objects.get_or_create(username="testuser")
 
-    # Redirect back to frontend success page
+    expires_at = timezone.now() + timedelta(seconds=tok["expires_in"])
+    SpotifyToken.objects.update_or_create(
+        user=user,
+        defaults={
+            "access_token": tok["access_token"],
+            "refresh_token": tok["refresh_token"],
+            "expires_at": expires_at,
+            "scope": tok.get("scope", ""),
+        }
+    )
+
     frontend_url = os.getenv("FRONTEND_SUCCESS_URL", "http://localhost:3000/auth/success")
     return HttpResponseRedirect(f"{frontend_url}?ok=1")
 
