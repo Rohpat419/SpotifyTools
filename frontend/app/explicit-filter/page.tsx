@@ -219,18 +219,18 @@ export default function ExplicitFilterPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                  {/* <div className="text-center p-4 bg-muted/50 rounded-lg">
                     <div className="text-2xl font-bold text-foreground">-</div>
                     <div className="text-sm text-muted-foreground">Total Tracks</div>
-                  </div>
+                  </div> */}
                   <div className="text-center p-4 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
                     <div className="text-2xl font-bold text-red-600 dark:text-red-400">{result.rows.length}</div>
                     <div className="text-sm text-red-700 dark:text-red-300">Explicit Tracks</div>
                   </div>
-                  <div className="text-center p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+                  {/* <div className="text-center p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
                     <div className="text-2xl font-bold text-green-600 dark:text-green-400">-</div>
                     <div className="text-sm text-green-700 dark:text-green-300">Clean Tracks</div>
-                  </div>
+                  </div> */}
                 </div>
               </CardContent>
             </Card>
