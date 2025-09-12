@@ -39,6 +39,7 @@ export default function TopTracksPage() {
       setError("Please authenticate with Spotify first")
       return
     }
+
     setIsLoading(true)
     setError(null)
 
@@ -337,6 +338,9 @@ export default function TopTracksPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Error Notification */}
+        <ErrorNotification show={showErrorNotification} onClose={() => setShowErrorNotification(false)} />
       </div>
     </PageLayout>
   )

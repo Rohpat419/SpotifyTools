@@ -214,7 +214,7 @@ export const formatError = (error: unknown): string => {
       case "HTTP_429":
         return "Too many requests. Please wait a moment and try again."
       case "HTTP_500":
-        return "Do you have authorization? Please try to authenticate."
+        return "Do you have authorization?" // Updated 500 error message
       case "NETWORK_ERROR":
         return "Network connection failed. Please check your internet connection."
       default:
@@ -229,9 +229,14 @@ export const formatError = (error: unknown): string => {
   return "An unexpected error occurred"
 }
 
+import { useUserStore } from "./user-store"
+
 // Enhanced API functions with better error handling
 export const enhancedApi = {
   async checkDuplicates(playlistUrl: string, options?: ApiRequestOptions): Promise<ApiResponse<DuplicateCheckResult>> {
+    const userStore = useUserStore()
+    const userId = userStore.userId
+
     const validation = validatePlaylistUrl(playlistUrl)
     if (!validation.isValid) {
       return {
@@ -239,18 +244,18 @@ export const enhancedApi = {
         error: validation.error,
       }
     }
-    console.log("After validation function, playlistId is now: ", validation.playlistId)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/get_duplicate_tracks`, {
+      const response = await fetch(`${API_BASE_URL}/api/duplicates`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          user: userId,
           playlist_id: `${validation.playlistId}`,
           strict: false,
-          tol_secs: 5,
+          tol_secs: 2,
         }),
       })
 
@@ -276,6 +281,9 @@ export const enhancedApi = {
     playlistUrl: string,
     options?: ApiRequestOptions,
   ): Promise<ApiResponse<DuplicateDeletionResult>> {
+    const userStore = useUserStore()
+    const userId = userStore.userId
+
     const validation = validatePlaylistUrl(playlistUrl)
     if (!validation.isValid) {
       return {
@@ -285,12 +293,13 @@ export const enhancedApi = {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/delete_duplicate_tracks`, {
+      const response = await fetch(`${API_BASE_URL}/api/duplicates/delete`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          user: userId,
           playlist_id: `${validation.playlistId}`,
         }),
       })
@@ -316,9 +325,12 @@ export const enhancedApi = {
   async filterExplicitContent(
     playlistUrl: string,
     mode: "metadata" | "lyrics",
-    customWords: string[] = [],
+    customWords: string[] = [], // Added customWords parameter
     options?: ApiRequestOptions,
   ): Promise<ApiResponse<ExplicitFilterResult>> {
+    const userStore = useUserStore()
+    const userId = userStore.userId
+
     const validation = validatePlaylistUrl(playlistUrl)
     if (!validation.isValid) {
       return {
@@ -328,15 +340,16 @@ export const enhancedApi = {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/explicit_report`, {
+      const response = await fetch(`${API_BASE_URL}/api/explicit`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          user: userId,
           playlist_id: validation.playlistId,
           mode,
-          extra_banned_words: customWords,
+          extra_banned_words: customWords, // Pass custom words to backend
         }),
       })
 
@@ -358,54 +371,14 @@ export const enhancedApi = {
     }
   },
 
-  async removeTracks(
-    playlistUrl: string,
-    uris: string[],
-    options?: ApiRequestOptions,
-  ): Promise<ApiResponse<{ removed_count: number; removed_uris: string[] }>> {
-    const validation = validatePlaylistUrl(playlistUrl)
-    if (!validation.isValid) {
-      return {
-        success: false,
-        error: validation.error,
-      }
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/remove_tracks`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          playlist_id: validation.playlistId,
-          uris,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new ApiError(`HTTP ${response.status}: ${response.statusText}`, response.status)
-      }
-
-      const data = await response.json()
-      return {
-        success: true,
-        data,
-        message: "Tracks removed successfully",
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: formatError(error),
-      }
-    }
-  },
-
   async createCleanPlaylist(
     playlistUrl: string,
     explicitRows: ExplicitTrack[],
     options?: ApiRequestOptions,
   ): Promise<ApiResponse<any>> {
+    const userStore = useUserStore()
+    const userId = userStore.userId
+
     const validation = validatePlaylistUrl(playlistUrl)
     if (!validation.isValid) {
       return {
@@ -415,12 +388,13 @@ export const enhancedApi = {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/create_clean_playlist`, {
+      const response = await fetch(`${API_BASE_URL}/api/explicit/create-clean`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          user: userId,
           playlist_id: validation.playlistId,
           rows: explicitRows,
         }),
@@ -449,12 +423,15 @@ export const enhancedApi = {
     timeRange: "4_weeks" | "6_months" | "all_time",
     options?: ApiRequestOptions,
   ): Promise<ApiResponse<TopItemsResult>> {
+    const userStore = useUserStore()
+    const userId = userStore.userId
+
     try {
       const backendTimeRange =
         timeRange === "4_weeks" ? "short_term" : timeRange === "6_months" ? "medium_term" : "long_term"
 
       const response = await fetch(
-        `${API_BASE_URL}/api/top_items?kind=${kind}&time_range=${backendTimeRange}&limit=5`,
+        `${API_BASE_URL}/api/tops?user=${userId}&kind=${kind}&time_range=${backendTimeRange}&limit=5`,
         {
           method: "GET",
           headers: {
@@ -537,6 +514,7 @@ export const createApiWithUser = (userId: string) => ({
       }
     }
   },
+
   async deleteDuplicates(
     playlistUrl: string,
     options?: ApiRequestOptions,

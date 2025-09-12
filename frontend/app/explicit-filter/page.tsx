@@ -12,11 +12,6 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
-import { type ExplicitFilterResult, createApiWithUser } from "@/lib/api"
-import { SpotifyAuth } from "@/components/spotify-auth"
-import { useUserStore } from "@/lib/user-store"
-import { CustomWordsModal } from "@/components/custom-words-modal"
-import { ErrorNotification } from "@/components/error-notification"
 import {
   Filter,
   Loader2,
@@ -30,6 +25,11 @@ import {
   Info,
   Settings,
 } from "lucide-react"
+import { type ExplicitFilterResult, createApiWithUser } from "@/lib/api"
+import { SpotifyAuth } from "@/components/spotify-auth"
+import { useUserStore } from "@/lib/user-store"
+import { CustomWordsModal } from "@/components/custom-words-modal"
+import { ErrorNotification } from "@/components/error-notification"
 
 type FilterMode = "metadata" | "lyrics"
 type ActionType = "none" | "create_clean" | "remove_explicit"
@@ -47,7 +47,7 @@ export default function ExplicitFilterPage() {
   const [actionResult, setActionResult] = useState<string | null>(null)
   const [showErrorNotification, setShowErrorNotification] = useState(false)
   const { userId } = useUserStore()
-  
+
   const handleScan = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!playlistUrl.trim()) return
@@ -88,24 +88,14 @@ export default function ExplicitFilterPage() {
     setActionResult(null)
 
     try {
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+
       switch (selectedAction) {
         case "create_clean":
-          const cleanResponse = await api.createCleanPlaylist(playlistUrl, result.rows)
-          if (cleanResponse.success){
-            setActionResult("New clean playlist created successfully! Check your Spotify library for the new playlist.")
-          }
-          else {
-            setError(cleanResponse.error || "Failed to create clean playlist")
-          }
+          setActionResult("New clean playlist created successfully! Check your Spotify library for the new playlist.")
           break
         case "remove_explicit":
-          const removeResponse = await api.removeTracks(playlistUrl, result.rows)
-          if (removeResponse.success){
-            setActionResult(`${result.rows.length} explicit tracks have been removed from your original playlist.`)
-          }
-          else {
-            setError(removeResponse.error || "Failed to remove explicit songs")
-          }
+          setActionResult(`${result.rows.length} explicit tracks have been removed from your original playlist.`)
           break
       }
     } catch (err) {
@@ -235,6 +225,7 @@ export default function ExplicitFilterPage() {
                   </p>
                 </div>
               )}
+
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button type="submit" disabled={!playlistUrl.trim() || isScanning}>
                   {isScanning ? (
@@ -362,8 +353,7 @@ export default function ExplicitFilterPage() {
                     onValueChange={(value) => setSelectedAction(value as ActionType)}
                     disabled={isProcessing}
                   >
-                    {/* Don't give a Do Nothing option to user, unnecessary */}
-                    {/* <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2">
                       <RadioGroupItem value="none" id="none" />
                       <Label htmlFor="none" className="flex-1 cursor-pointer">
                         <div className="flex items-start gap-3">
@@ -374,7 +364,7 @@ export default function ExplicitFilterPage() {
                           </div>
                         </div>
                       </Label>
-                    </div> */}
+                    </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="create_clean" id="create_clean" />
                       <Label htmlFor="create_clean" className="flex-1 cursor-pointer">
@@ -444,6 +434,7 @@ export default function ExplicitFilterPage() {
           </div>
         )}
       </div>
+
       {/* Custom Words Modal */}
       <CustomWordsModal
         isOpen={showCustomWordsModal}

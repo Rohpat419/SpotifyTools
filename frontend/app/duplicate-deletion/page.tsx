@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { PageLayout } from "@/components/page-layout"
 import { Button } from "@/components/ui/button"
@@ -21,7 +20,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Trash2, Loader2, AlertCircle, CheckCircle, Music, AlertTriangle } from "lucide-react"
 import { type DuplicateDeletionResult, createApiWithUser } from "@/lib/api" // Fixed import path
-
 import { SpotifyAuth } from "@/components/spotify-auth"
 import { ErrorNotification } from "@/components/error-notification"
 import { useUserStore } from "@/lib/user-store" // Fixed import path
@@ -85,7 +83,6 @@ export default function DuplicateDeletionPage() {
       description="Remove duplicate tracks from your Spotify playlists with smart confirmation and detailed summaries."
     >
       <div className="max-w-4xl mx-auto space-y-8">
-        {/* Spotify Authentication Component */}
         <SpotifyAuth
           requiredFor={[
             "Accessing private playlists",
@@ -94,7 +91,6 @@ export default function DuplicateDeletionPage() {
           ]}
         />
 
-        {/* Warning Notice */}
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
@@ -103,7 +99,6 @@ export default function DuplicateDeletionPage() {
           </AlertDescription>
         </Alert>
 
-        {/* Input Form */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -154,7 +149,6 @@ export default function DuplicateDeletionPage() {
           </CardContent>
         </Card>
 
-        {/* Confirmation Dialog */}
         <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -179,7 +173,6 @@ export default function DuplicateDeletionPage() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Error Display */}
         {error && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -187,10 +180,8 @@ export default function DuplicateDeletionPage() {
           </Alert>
         )}
 
-        {/* Success Results */}
         {result && (
           <div className="space-y-6">
-            {/* Success Message */}
             <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
               <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
               <AlertDescription className="text-green-800 dark:text-green-200">
@@ -198,7 +189,6 @@ export default function DuplicateDeletionPage() {
               </AlertDescription>
             </Alert>
 
-            {/* Deletion Summary */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -213,11 +203,10 @@ export default function DuplicateDeletionPage() {
                     <div className="text-3xl font-bold text-muted-foreground mb-2">{result.original}</div>
                     <div className="text-sm text-muted-foreground">Original Tracks</div>
                   </div>
-                  {/* Tracks kept is a confusing metric */}
-                  {/* <div className="text-center p-6 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="text-center p-6 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
                     <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">{result.kept}</div>
                     <div className="text-sm text-green-700 dark:text-green-300">Tracks Kept</div>
-                  </div> */}
+                  </div>
                   <div className="text-center p-6 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
                     <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">{result.removed}</div>
                     <div className="text-sm text-red-700 dark:text-red-300">Tracks Removed</div>
@@ -226,7 +215,6 @@ export default function DuplicateDeletionPage() {
               </CardContent>
             </Card>
 
-            {/* Next Steps */}
             <Card>
               <CardHeader>
                 <CardTitle>What's Next?</CardTitle>
@@ -254,7 +242,8 @@ export default function DuplicateDeletionPage() {
             </Card>
           </div>
         )}
-        <ErrorNotification show={showErrorNotification} onClose={() => setShowErrorNotification(false)} />    
+
+        <ErrorNotification show={showErrorNotification} onClose={() => setShowErrorNotification(false)} />
       </div>
     </PageLayout>
   )
