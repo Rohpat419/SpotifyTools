@@ -100,7 +100,14 @@ def callback(request):
             status=500,
         )
     tok = r.json()
+    # Log token response (mask sensitive fields)
+    sanitized_tok = tok.copy()
+    if "access_token" in sanitized_tok:
+        sanitized_tok["access_token"] = "<hidden>"
+    if "refresh_token" in sanitized_tok:
+        sanitized_tok["refresh_token"] = "<hidden>"
 
+    print("DEBUG Spotify token exchange response:", sanitized_tok)
     # Example: tie everything to a dummy user until you have real auth
     user, _ = User.objects.get_or_create(username="testuser")
 
