@@ -358,7 +358,7 @@ export const enhancedApi = {
 
   async removeTracks(
     playlistUrl: string,
-    uris: string[],
+    uris: (string | { uri: string })[],
     options?: ApiRequestOptions,
   ): Promise<ApiResponse<{ removed_count: number; removed_uris: string[] }>> {
     const validation = validatePlaylistUrl(playlistUrl)
@@ -369,6 +369,9 @@ export const enhancedApi = {
       }
     }
 
+    // 🔑 Normalize: convert [{ uri: "..." }] → ["..."]
+    const cleanUris = uris.map(u => (typeof u === "string" ? u : u.uri))
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/remove_tracks`, {
         method: "POST",
@@ -377,7 +380,7 @@ export const enhancedApi = {
         },
         body: JSON.stringify({
           playlist_id: validation.playlistId,
-          uris,
+          uris: cleanUris,
         }),
       })
 
