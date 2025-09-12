@@ -91,7 +91,7 @@ def callback(request):
         "client_secret": CLIENT_SECRET,
         "code_verifier": pkce["verifier"],
     }
-
+    print("DEBUG token request data:", data)
     r = requests.post(TOKEN_URL, data=data, timeout=30)
     if r.status_code != 200:
         print("DEBUG Spotify token exchange failed:", r.status_code, r.text)
