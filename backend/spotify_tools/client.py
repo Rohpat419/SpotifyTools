@@ -71,14 +71,23 @@ class SpotifyClient:
         params = {"limit": 100}
 
         retry_counter = 0
+        tried_user_auth = False
+
         while True and retry_counter < 10:
             r = requests.get(url, headers=headers, params=params, timeout=TIMEOUT)
+
+            # if playlist is private/restricted and we used app token, retry with user token
+            if r.status_code == 404 and not write and not tried_user_auth:
+                print("Playlist may be private or restricted; retrying with user auth...")
+                headers = self._auth_header(write=True)
+                tried_user_auth = True
+                continue
+
             retry_counter += 1
             if r.status_code == 429:
                 retry_timer = int(r.headers.get("Retry-After", "1"))
                 time.sleep(retry_timer)
                 continue
-
 
             r.raise_for_status()
             data = r.json()
@@ -87,6 +96,7 @@ class SpotifyClient:
             url = data.get("next")
             if not url:
                 break
+
     
     # Deletes all songs that are identified as duplicate, too destructive
     # def remove_tracks(self, playlist_url: str, deletion_payload: dict) -> dict: 
