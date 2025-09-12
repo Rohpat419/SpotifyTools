@@ -94,8 +94,11 @@ def callback(request):
 
     r = requests.post(TOKEN_URL, data=data, timeout=30)
     if r.status_code != 200:
-        return JsonResponse({"error": "Token exchange failed", "details": r.text}, status=500)
-
+        print("DEBUG Spotify token exchange failed:", r.status_code, r.text)
+        return JsonResponse(
+            {"error": "Token exchange failed", "details": r.text},
+            status=500,
+        )
     tok = r.json()
 
     # Example: tie everything to a dummy user until you have real auth
