@@ -88,8 +88,10 @@ def callback(request):
         "code": code,
         "redirect_uri": REDIRECT_URI,
         "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
         "code_verifier": pkce["verifier"],
     }
+
     r = requests.post(TOKEN_URL, data=data, timeout=30)
     if r.status_code != 200:
         return JsonResponse({"error": "Token exchange failed", "details": r.text}, status=500)
