@@ -43,10 +43,14 @@ def save_state(state, verifier):
         print("Save state error:", e)
 
 def load_state(state):
-    if not STATE_FILE.exists():
+    try:
+        entry = PKCEState.objects.get(state=state)
+        if entry.is_expired():
+            entry.delete()
+            return None
+        return {"verifier": entry.code_verifier}
+    except PKCEState.DoesNotExist:
         return None
-    data = json.load(STATE_FILE.open())
-    return data.pop(state, None)
 
 def login(request):
     # Generate PKCE values
