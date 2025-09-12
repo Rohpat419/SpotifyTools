@@ -7,27 +7,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle, AlertCircle, Music, ArrowLeft, Home } from "lucide-react"
+import { useUserStore } from "@/lib/user-store"
 
 export default function AuthSuccessPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [authStatus, setAuthStatus] = useState<"success" | "error" | null>(null)
+  const { setUserId } = useUserStore()
 
   useEffect(() => {
     const ok = searchParams.get("ok")
     const error = searchParams.get("error")
+    const user = searchParams.get("user")
 
     if (error) {
       setAuthStatus("error")
       return
     }
 
-    if (ok === "1") {
+    if (ok === "1" && user) {
+      setUserId(user)
       setAuthStatus("success")
     } else {
       setAuthStatus("error")
     }
-  }, [searchParams])
+  }, [searchParams, setUserId])
 
   return (
     <PageLayout

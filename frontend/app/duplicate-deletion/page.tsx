@@ -20,8 +20,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Trash2, Loader2, AlertCircle, CheckCircle, Music, AlertTriangle } from "lucide-react"
-import { api, type DuplicateDeletionResult } from "@/lib/api"
+import { createApiWithUser, type DuplicateDeletionResult } from "@/lib/api"
 import { SpotifyAuth } from "@/components/spotify-auth"
+import { useUserStore } from "@/lib/user-store"
 
 export default function DuplicateDeletionPage() {
   const [playlistUrl, setPlaylistUrl] = useState("")
@@ -29,10 +30,16 @@ export default function DuplicateDeletionPage() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [result, setResult] = useState<DuplicateDeletionResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const { userId } = useUserStore()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!playlistUrl.trim()) return
+
+    if (!userId) {
+      setError("Please authenticate with Spotify first")
+      return
+    }
 
     setShowConfirmDialog(true)
   }
@@ -44,6 +51,7 @@ export default function DuplicateDeletionPage() {
     setResult(null)
 
     try {
+      const api = createApiWithUser(userId)
       const response = await api.deleteDuplicates(playlistUrl)
       if (response.success && response.data) {
         setResult(response.data)
