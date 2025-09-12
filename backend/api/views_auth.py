@@ -5,16 +5,10 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.conf import settings
 from django.http import HttpResponse
 
-# trigger env var loading, helps in dev, doesn't do anything in prod
+# trigger env var loading
 from spotify_tools.config import *
 
 from pathlib import Path
-
-# Support for multiple user tokens
-from django.utils import timezone
-from datetime import timedelta
-from django.contrib.auth.models import User
-from api.models import SpotifyToken
 
 AUTH_URL  = "https://accounts.spotify.com/authorize"
 TOKEN_URL = "https://accounts.spotify.com/api/token"
@@ -88,47 +82,22 @@ def callback(request):
         "code": code,
         "redirect_uri": REDIRECT_URI,
         "client_id": CLIENT_ID,
-        "client_secret": CLIENT_SECRET,
         "code_verifier": pkce["verifier"],
     }
-    print("DEBUG token request data:", data)
     r = requests.post(TOKEN_URL, data=data, timeout=30)
     if r.status_code != 200:
-        print("DEBUG Spotify token exchange failed:", r.status_code, r.text)
-        return JsonResponse(
-            {"error": "Token exchange failed", "details": r.text},
-            status=500,
-        )
+        return JsonResponse({"error": "Token exchange failed", "details": r.text}, status=500)
+
     tok = r.json()
-    # Log token response (mask sensitive fields)
-    sanitized_tok = tok.copy()
-    if "access_token" in sanitized_tok:
-        sanitized_tok["access_token"] = "<hidden>"
-    if "refresh_token" in sanitized_tok:
-        sanitized_tok["refresh_token"] = "<hidden>"
 
-    print("DEBUG Spotify token exchange response:", sanitized_tok)
-    # Example: tie everything to a dummy user until you have real auth
-    # --- PREVENT reuse ---
-    if "access_token" in tok:
-        # Save tokens as you already do...
-        user, _ = User.objects.get_or_create(username="testuser")
-        expires_at = timezone.now() + timedelta(seconds=tok["expires_in"])
-        SpotifyToken.objects.update_or_create(
-            user=user,
-            defaults={
-                "access_token": tok["access_token"],
-                "refresh_token": tok.get("refresh_token", ""),
-                "expires_at": expires_at,
-                "scope": tok.get("scope", ""),
-            }
-        )
+    # Save refresh token for this user (TODO: tie to user identity)
+    save_path = os.getenv("SPOTIFY_TOKEN_PATH", settings.BASE_DIR / "spotify_tokens.json")
+    with open(save_path, "w", encoding="utf-8") as f:
+        json.dump(tok, f, indent=2)
 
-        # Redirect right away, so /callback can't be refreshed
-        frontend_url = os.getenv("FRONTEND_SUCCESS_URL", "http://localhost:3000/auth/success")
-        return HttpResponseRedirect(f"{frontend_url}?ok=1")
-    # Edge case: no access_token in Spotify’s response
-    return JsonResponse({"error": "No access token in response", "details": tok}, status=500)
+    # Redirect back to frontend success page
+    frontend_url = os.getenv("FRONTEND_SUCCESS_URL", "http://localhost:3000/auth/success")
+    return HttpResponseRedirect(f"{frontend_url}?ok=1")
 
 def auth_success(request):
     return HttpResponse("<h1> DEV Spotify login successful!</h1><p>You may close this tab now.</p>")

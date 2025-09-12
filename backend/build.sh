@@ -5,5 +5,8 @@ set -o errexit  # exit on error
 pip install --upgrade pip
 pip install -r requirements.txt || pip install -e .
 
+# Run migrations
+python manage.py migrate --noinput
+
 # Collect static files (safe even if unused now)
 python manage.py collectstatic --noinput

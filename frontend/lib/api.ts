@@ -229,14 +229,9 @@ export const formatError = (error: unknown): string => {
   return "An unexpected error occurred"
 }
 
-import { useUserStore } from "./user-store"
-
 // Enhanced API functions with better error handling
 export const enhancedApi = {
   async checkDuplicates(playlistUrl: string, options?: ApiRequestOptions): Promise<ApiResponse<DuplicateCheckResult>> {
-    const userStore = useUserStore()
-    const userId = userStore.userId
-
     const validation = validatePlaylistUrl(playlistUrl)
     if (!validation.isValid) {
       return {
@@ -244,6 +239,7 @@ export const enhancedApi = {
         error: validation.error,
       }
     }
+    console.log("After validation function, playlistId is now: ", validation.playlistId)
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/get_duplicate_tracks`, {
@@ -252,10 +248,9 @@ export const enhancedApi = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          user: userId,
-          playlist_id: validation.playlistId,
+          playlist_id: `${validation.playlistId}`,
           strict: false,
-          tol_secs: 2,
+          tol_secs: 5,
         }),
       })
 
@@ -281,9 +276,6 @@ export const enhancedApi = {
     playlistUrl: string,
     options?: ApiRequestOptions,
   ): Promise<ApiResponse<DuplicateDeletionResult>> {
-    const userStore = useUserStore()
-    const userId = userStore.userId
-
     const validation = validatePlaylistUrl(playlistUrl)
     if (!validation.isValid) {
       return {
@@ -299,8 +291,7 @@ export const enhancedApi = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          user: userId,
-          playlist_id: validation.playlistId,
+          playlist_id: `${validation.playlistId}`,
         }),
       })
 
@@ -325,12 +316,8 @@ export const enhancedApi = {
   async filterExplicitContent(
     playlistUrl: string,
     mode: "metadata" | "lyrics",
-    extraBannedWords: string[] = [],
     options?: ApiRequestOptions,
   ): Promise<ApiResponse<ExplicitFilterResult>> {
-    const userStore = useUserStore()
-    const userId = userStore.userId
-
     const validation = validatePlaylistUrl(playlistUrl)
     if (!validation.isValid) {
       return {
@@ -346,10 +333,8 @@ export const enhancedApi = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          user: userId,
           playlist_id: validation.playlistId,
           mode,
-          extra_banned_words: extraBannedWords,
         }),
       })
 
@@ -376,9 +361,6 @@ export const enhancedApi = {
     explicitRows: ExplicitTrack[],
     options?: ApiRequestOptions,
   ): Promise<ApiResponse<any>> {
-    const userStore = useUserStore()
-    const userId = userStore.userId
-
     const validation = validatePlaylistUrl(playlistUrl)
     if (!validation.isValid) {
       return {
@@ -394,7 +376,6 @@ export const enhancedApi = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          user: userId,
           playlist_id: validation.playlistId,
           rows: explicitRows,
         }),
@@ -421,18 +402,14 @@ export const enhancedApi = {
   async getTopItems(
     kind: "tracks" | "artists",
     timeRange: "4_weeks" | "6_months" | "all_time",
-    limit = 5,
     options?: ApiRequestOptions,
   ): Promise<ApiResponse<TopItemsResult>> {
-    const userStore = useUserStore()
-    const userId = userStore.userId
-
     try {
       const backendTimeRange =
         timeRange === "4_weeks" ? "short_term" : timeRange === "6_months" ? "medium_term" : "long_term"
 
       const response = await fetch(
-        `${API_BASE_URL}/api/top_items?user=${encodeURIComponent(userId)}&kind=${kind}&time_range=${backendTimeRange}&limit=${limit}`,
+        `${API_BASE_URL}/api/top_items?kind=${kind}&time_range=${backendTimeRange}&limit=5`,
         {
           method: "GET",
           headers: {
@@ -473,233 +450,6 @@ export const enhancedApi = {
     return this.getTopItems("artists", timeRange, options)
   },
 }
-
-export const createApiWithUser = (userId: string) => ({
-  async checkDuplicates(playlistUrl: string, options?: ApiRequestOptions): Promise<ApiResponse<DuplicateCheckResult>> {
-    const validation = validatePlaylistUrl(playlistUrl)
-    if (!validation.isValid) {
-      return {
-        success: false,
-        error: validation.error,
-      }
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/get_duplicate_tracks`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user: userId,
-          playlist_id: validation.playlistId,
-          strict: false,
-          tol_secs: 2,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new ApiError(`HTTP ${response.status}: ${response.statusText}`, response.status)
-      }
-
-      const data = await response.json()
-      return {
-        success: true,
-        data,
-        message: "Duplicate check completed successfully",
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: formatError(error),
-      }
-    }
-  },
-
-  async deleteDuplicates(
-    playlistUrl: string,
-    options?: ApiRequestOptions,
-  ): Promise<ApiResponse<DuplicateDeletionResult>> {
-    const validation = validatePlaylistUrl(playlistUrl)
-    if (!validation.isValid) {
-      return {
-        success: false,
-        error: validation.error,
-      }
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/delete_duplicate_tracks`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user: userId,
-          playlist_id: validation.playlistId,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new ApiError(`HTTP ${response.status}: ${response.statusText}`, response.status)
-      }
-
-      const data = await response.json()
-      return {
-        success: true,
-        data,
-        message: "Duplicates deleted successfully",
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: formatError(error),
-      }
-    }
-  },
-
-  async filterExplicitContent(
-    playlistUrl: string,
-    mode: "metadata" | "lyrics",
-    extraBannedWords: string[] = [],
-    options?: ApiRequestOptions,
-  ): Promise<ApiResponse<ExplicitFilterResult>> {
-    const validation = validatePlaylistUrl(playlistUrl)
-    if (!validation.isValid) {
-      return {
-        success: false,
-        error: validation.error,
-      }
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/explicit_report`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user: userId,
-          playlist_id: validation.playlistId,
-          mode,
-          extra_banned_words: extraBannedWords,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new ApiError(`HTTP ${response.status}: ${response.statusText}`, response.status)
-      }
-
-      const data = await response.json()
-      return {
-        success: true,
-        data,
-        message: "Explicit content scan completed",
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: formatError(error),
-      }
-    }
-  },
-
-  async createCleanPlaylist(
-    playlistUrl: string,
-    explicitRows: ExplicitTrack[],
-    options?: ApiRequestOptions,
-  ): Promise<ApiResponse<any>> {
-    const validation = validatePlaylistUrl(playlistUrl)
-    if (!validation.isValid) {
-      return {
-        success: false,
-        error: validation.error,
-      }
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/create_clean_playlist`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user: userId,
-          playlist_id: validation.playlistId,
-          rows: explicitRows,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new ApiError(`HTTP ${response.status}: ${response.statusText}`, response.status)
-      }
-
-      const data = await response.json()
-      return {
-        success: true,
-        data,
-        message: "Clean playlist created successfully",
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: formatError(error),
-      }
-    }
-  },
-
-  async getTopItems(
-    kind: "tracks" | "artists",
-    timeRange: "4_weeks" | "6_months" | "all_time",
-    limit = 5,
-    options?: ApiRequestOptions,
-  ): Promise<ApiResponse<TopItemsResult>> {
-    try {
-      const backendTimeRange =
-        timeRange === "4_weeks" ? "short_term" : timeRange === "6_months" ? "medium_term" : "long_term"
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/top_items?user=${encodeURIComponent(userId)}&kind=${kind}&time_range=${backendTimeRange}&limit=${limit}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      )
-
-      if (!response.ok) {
-        throw new ApiError(`HTTP ${response.status}: ${response.statusText}`, response.status)
-      }
-
-      const data = await response.json()
-      return {
-        success: true,
-        data,
-        message: `Top ${kind} retrieved successfully`,
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: formatError(error),
-      }
-    }
-  },
-
-  async getTopTracks(
-    timeRange: "4_weeks" | "6_months" | "all_time",
-    options?: ApiRequestOptions,
-  ): Promise<ApiResponse<TopItemsResult>> {
-    return this.getTopItems("tracks", timeRange, options)
-  },
-
-  async getTopArtists(
-    timeRange: "4_weeks" | "6_months" | "all_time",
-    options?: ApiRequestOptions,
-  ): Promise<ApiResponse<TopItemsResult>> {
-    return this.getTopItems("artists", timeRange, options)
-  },
-})
 
 // Export utilities for testing and development
 export const apiUtils = {
