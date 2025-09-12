@@ -143,7 +143,7 @@ def callback(request):
 
     # --- Save tokens (dummy user until real auth implemented) ---
     try:
-        user, _ = User.objects.get_or_create(username="testuser")
+        user, _ = User.objects.get_or_create(username="testuser", defaults={"last_login": timezone.now()})
         expires_at = timezone.now() + timedelta(seconds=tok["expires_in"])
         obj, created = SpotifyToken.objects.update_or_create(
             user=user,
