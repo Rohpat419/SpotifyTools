@@ -130,6 +130,7 @@ class SpotifyClient:
             r = requests.delete(f"{API_URL}/playlists/{pid}/tracks",
                     headers=headers, json=payload, timeout=TIMEOUT)
             r.raise_for_status()
+        
 
     def add_items(self, playlist_id: str, uris: List[str], position: Optional[int] = None) -> dict:
         """Append up to 100 URIs (or insert at a position)."""

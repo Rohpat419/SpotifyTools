@@ -59,15 +59,24 @@ export default function ExplicitFilterPage() {
     setActionResult(null)
 
     try {
-      // Simulate API call for the selected action
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-
       switch (selectedAction) {
         case "create_clean":
-          setActionResult("New clean playlist created successfully! Check your Spotify library for the new playlist.")
+          const cleanResponse = await api.createCleanPlaylist(playlistUrl, result.rows)
+          if (cleanResponse.success){
+            setActionResult("New clean playlist created successfully! Check your Spotify library for the new playlist.")
+          }
+          else {
+            setError(cleanResponse.error || "Failed to create clean playlist")
+          }
           break
         case "remove_explicit":
-          setActionResult(`${result.rows.length} explicit tracks have been removed from your original playlist.`)
+          const removeResponse = await api.removeTracks(playlistUrl, result.rows)
+          if (removeResponse.success){
+            setActionResult(`${result.rows.length} explicit tracks have been removed from your original playlist.`)
+          }
+          else {
+            setError(removeResponse.error || "Failed to remove explicit songs")
+          }
           break
       }
     } catch (err) {

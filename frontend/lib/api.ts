@@ -356,6 +356,49 @@ export const enhancedApi = {
     }
   },
 
+  async removeTracks(
+    playlistUrl: string,
+    uris: string[],
+    options?: ApiRequestOptions,
+  ): Promise<ApiResponse<{ removed_count: number; removed_uris: string[] }>> {
+    const validation = validatePlaylistUrl(playlistUrl)
+    if (!validation.isValid) {
+      return {
+        success: false,
+        error: validation.error,
+      }
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/remove_tracks`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          playlist_id: validation.playlistId,
+          uris,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new ApiError(`HTTP ${response.status}: ${response.statusText}`, response.status)
+      }
+
+      const data = await response.json()
+      return {
+        success: true,
+        data,
+        message: "Tracks removed successfully",
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: formatError(error),
+      }
+    }
+  },
+
   async createCleanPlaylist(
     playlistUrl: string,
     explicitRows: ExplicitTrack[],

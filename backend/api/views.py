@@ -27,6 +27,16 @@ def delete_duplicate_tracks(request):
     result = client.clear_dupes_then_readd(playlist_id)
     return Response(result)
 
+
+@api_view(["POST"])
+def remove_tracks(request):
+    playlist_id = request.data.get("playlist_id")
+    uris = request.data.get("uris", [])
+    client = SpotifyClient()
+    return Response({"removed_count": len(uris), "removed_uris": uris})
+    
+
+
 @api_view(["POST"])
 def explicit_report(request):
     playlist_id = request.data.get("playlist_id")
@@ -35,6 +45,9 @@ def explicit_report(request):
     client = SpotifyClient()
     rows = explicit_report_from_playlist(client, playlist_id, mode=mode, extra_banned_words=extra)
     return Response({"rows": rows})
+
+
+
 
 @api_view(["POST"])
 def create_clean_playlist(request):
