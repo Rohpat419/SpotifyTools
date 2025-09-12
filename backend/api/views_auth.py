@@ -57,10 +57,15 @@ def login(request):
 
     # Generate state and persist verifier in DB
     state = secrets.token_urlsafe(16)
-    PKCEState.objects.update_or_create(
-        state=state,
-        defaults={"code_verifier": code_verifier}
-    )
+    try:
+        PKCEState.objects.update_or_create(
+            state=state,
+            defaults={"code_verifier": code_verifier}
+        )
+    except Exception as e:
+        print("DEBUG PKCE DB write failed:", e)
+        return JsonResponse({"error": "PKCE DB write failed", "details": str(e)}, status=500)
+
 
     # Build authorize URL
     params = {
