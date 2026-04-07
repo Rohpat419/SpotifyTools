@@ -1,0 +1,29 @@
+# Build artifacts - DO NOT auto-load
+node_modules/
+build/
+dist/
+.next/
+__pycache__/
+*.pyc
+
+# Dependencies
+pnpm-lock.yaml
+package-lock.json
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# IDE/Editor
+.vscode/
+.idea/
+
+# Generated
+*.log
+coverage/
+staticfiles/
+
+# Legacy auth artifacts (should not exist in production)
+spotify_tokens.json
+pkce_state.json
