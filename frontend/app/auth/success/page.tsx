@@ -109,7 +109,7 @@ export default function AuthSuccessPage() {
                   Return Home
                 </Button>
                 <Button
-                  onClick={() => (window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL || "https://spotify-tools-eozl.onrender.com"}/api/auth/login`)}
+                  onClick={() => (window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL || "https://spotify-tools-jo2u.onrender.com"}/api/auth/login`)}
                   className="flex-1 bg-[#1DB954] hover:bg-[#1ed760]"
                 >
                   <Music className="mr-2 h-4 w-4" />

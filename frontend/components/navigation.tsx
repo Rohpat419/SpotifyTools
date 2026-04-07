@@ -70,13 +70,12 @@ export function Navigation() {
 
               return (
                 <Link key={item.href} href={item.href}>
-                  <Button
-                    variant={isActive ? "secondary" : "ghost"}
+                  <button
                     className={cn(
-                      "flex items-center space-x-2 h-9 px-3 transition-all",
+                      "inline-flex items-center space-x-2 h-9 px-3 rounded-md text-sm transition-colors",
                       isActive
                         ? "bg-muted text-foreground font-medium border-l-2 border-l-primary"
-                        : "hover:bg-muted/50",
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
                     <IconComponent className="h-4 w-4" />
@@ -86,7 +85,7 @@ export function Navigation() {
                         {item.badge}
                       </Badge>
                     )}
-                  </Button>
+                  </button>
                 </Link>
               )
             })}

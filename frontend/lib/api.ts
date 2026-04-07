@@ -109,7 +109,7 @@ export function clearSessionToken(): void {
 
 const getApiBaseUrl = () => {
   const env = (typeof globalThis !== "undefined" && globalThis.process?.env) || {}
-  return env.NEXT_PUBLIC_API_BASE_URL || "https://spotify-tools-eozl.onrender.com"
+  return env.NEXT_PUBLIC_API_BASE_URL || "https://spotify-tools-jo2u.onrender.com"
 }
 
 const API_BASE_URL = getApiBaseUrl()
