@@ -1,10 +1,11 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { API_BASE_URL } from "@/lib/api"
 
 export function AuthButton() {
   const handleLogin = () => {
-    window.location.href = "https://spotify-tools-eozl.onrender.com/api/auth/login"
+    window.location.href = `${API_BASE_URL}/api/auth/login`
   }
 
   return (

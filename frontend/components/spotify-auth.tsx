@@ -4,38 +4,56 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CheckCircle, Music, AlertCircle, ExternalLink } from "lucide-react"
+import { CheckCircle, Music, AlertCircle, ExternalLink, LogOut } from "lucide-react"
+import { api, getSessionToken, clearSessionToken, API_BASE_URL } from "@/lib/api"
 
 interface SpotifyAuthProps {
   requiredFor: string[]
-  onAuthSuccess?: () => void
+  onAuthChange?: (authenticated: boolean) => void
 }
 
-export function SpotifyAuth({ requiredFor, onAuthSuccess }: SpotifyAuthProps) {
+export function SpotifyAuth({ requiredFor, onAuthChange }: SpotifyAuthProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [displayName, setDisplayName] = useState("")
   const [isChecking, setIsChecking] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+
+  const checkAuthStatus = async () => {
+    setIsChecking(true)
+    const token = getSessionToken()
+    if (!token) {
+      setIsAuthenticated(false)
+      onAuthChange?.(false)
+      setIsChecking(false)
+      return
+    }
+
+    const result = await api.checkAuthStatus()
+    if (result.success && result.data?.authenticated) {
+      setIsAuthenticated(true)
+      setDisplayName(result.data.display_name || "")
+      onAuthChange?.(true)
+    } else {
+      clearSessionToken()
+      setIsAuthenticated(false)
+      onAuthChange?.(false)
+    }
+    setIsChecking(false)
+  }
 
   useEffect(() => {
     checkAuthStatus()
-  }, [])
-
-  const checkAuthStatus = async () => {
-    try {
-      console.log("[v0] Checking auth status...")
-      // For now, assume user needs to authenticate since we can't check status
-      setIsAuthenticated(false)
-      console.log("[v0] User needs to authenticate")
-    } catch (err) {
-      console.error("[v0] Auth status check failed:", err)
-      setIsAuthenticated(false)
-    } finally {
-      setIsChecking(false)
-    }
-  }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogin = () => {
-    window.location.href = "https://spotify-tools-eozl.onrender.com/api/auth/login"
+    window.location.href = `${API_BASE_URL}/api/auth/login`
+  }
+
+  const handleLogout = async () => {
+    await api.logout()
+    clearSessionToken()
+    setIsAuthenticated(false)
+    setDisplayName("")
+    onAuthChange?.(false)
   }
 
   if (isChecking) {
@@ -43,7 +61,7 @@ export function SpotifyAuth({ requiredFor, onAuthSuccess }: SpotifyAuthProps) {
       <Card>
         <CardContent className="flex items-center justify-center py-6">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">Checking authentication status...</p>
           </div>
         </CardContent>
@@ -56,10 +74,18 @@ export function SpotifyAuth({ requiredFor, onAuthSuccess }: SpotifyAuthProps) {
       <Alert>
         <CheckCircle className="h-4 w-4" />
         <AlertDescription className="flex items-center justify-between">
-          <span>Connected to Spotify - you can access all features!</span>
-          <Button variant="outline" size="sm" onClick={checkAuthStatus}>
-            Refresh Status
-          </Button>
+          <span>
+            Connected to Spotify{displayName ? ` as ${displayName}` : ""} — all features available.
+          </span>
+          <div className="flex gap-2 ml-4">
+            <Button variant="outline" size="sm" onClick={checkAuthStatus}>
+              Refresh
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="h-3 w-3 mr-1" />
+              Logout
+            </Button>
+          </div>
         </AlertDescription>
       </Alert>
     )
@@ -86,13 +112,6 @@ export function SpotifyAuth({ requiredFor, onAuthSuccess }: SpotifyAuthProps) {
           ))}
         </ul>
 
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
         <Button
           onClick={handleLogin}
           className="w-full bg-[#1DB954] hover:bg-[#1ed760] text-white font-semibold"
@@ -104,7 +123,7 @@ export function SpotifyAuth({ requiredFor, onAuthSuccess }: SpotifyAuthProps) {
         </Button>
 
         <p className="text-xs text-muted-foreground text-center">
-          You'll be redirected to Spotify to authorize this application
+          You&apos;ll be redirected to Spotify to authorize this application
         </p>
       </CardContent>
     </Card>

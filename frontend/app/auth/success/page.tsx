@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle, AlertCircle, Music, ArrowLeft, Home } from "lucide-react"
+import { setSessionToken } from "@/lib/api"
 
 export default function AuthSuccessPage() {
   const searchParams = useSearchParams()
@@ -14,14 +15,22 @@ export default function AuthSuccessPage() {
   const [authStatus, setAuthStatus] = useState<"success" | "error" | null>(null)
 
   useEffect(() => {
-    const ok = searchParams.get("ok")
+    const session = searchParams.get("session")
     const error = searchParams.get("error")
+    const ok = searchParams.get("ok")
 
     if (error) {
       setAuthStatus("error")
       return
     }
 
+    if (session) {
+      setSessionToken(session)
+      setAuthStatus("success")
+      return
+    }
+
+    // Legacy support for ?ok=1 (shouldn't happen with new flow)
     if (ok === "1") {
       setAuthStatus("success")
     } else {
@@ -76,7 +85,7 @@ export default function AuthSuccessPage() {
                 <AlertCircle className="h-8 w-8 text-white" />
               </div>
               <CardTitle className="text-2xl text-destructive">Connection Failed</CardTitle>
-              <CardDescription>We couldn't connect your Spotify account. This might be due to:</CardDescription>
+              <CardDescription>We couldn&apos;t connect your Spotify account. This might be due to:</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <ul className="text-sm text-muted-foreground space-y-2">
@@ -85,8 +94,8 @@ export default function AuthSuccessPage() {
                   You declined the authorization request
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full flex-shrink-0" />A network error occurred
-                  during the process
+                  <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full flex-shrink-0" />
+                  A network error occurred during the process
                 </li>
                 <li className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full flex-shrink-0" />
@@ -100,7 +109,7 @@ export default function AuthSuccessPage() {
                   Return Home
                 </Button>
                 <Button
-                  onClick={() => (window.location.href = "https://spotify-tools-eozl.onrender.com/api/auth/login")}
+                  onClick={() => (window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL || "https://spotify-tools-eozl.onrender.com"}/api/auth/login`)}
                   className="flex-1 bg-[#1DB954] hover:bg-[#1ed760]"
                 >
                   <Music className="mr-2 h-4 w-4" />

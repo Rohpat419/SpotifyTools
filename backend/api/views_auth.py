@@ -1,55 +1,49 @@
-# api/views_auth.py
-import os, base64, hashlib, secrets, requests, time, json
+import os
+import base64
+import hashlib
+import secrets
+import requests
+from datetime import timedelta
 from urllib.parse import urlencode
+
 from django.http import JsonResponse, HttpResponseRedirect
-from django.conf import settings
-from django.http import HttpResponse
+from django.utils import timezone
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
 
-# trigger env var loading
-from spotify_tools.config import *
+from spotify_tools.config import *  # noqa: F401,F403 — trigger env loading
+from api.models import AuthState, UserSession
 
-from pathlib import Path
-
-AUTH_URL  = "https://accounts.spotify.com/authorize"
+AUTH_URL = "https://accounts.spotify.com/authorize"
 TOKEN_URL = "https://accounts.spotify.com/api/token"
 
-CLIENT_ID     = os.getenv("SPOTIFY_CLIENT_ID")
-CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")   # used only on backend
-REDIRECT_URI  = os.getenv("SPOTIFY_REDIRECT_URI")    # e.g. https://your-backend.onrender.com/api/auth/callback
-SCOPES        = os.getenv("SPOTIFY_SCOPES", "playlist-modify-private playlist-read-private user-top-read")
+CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
+CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
+REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI")
+SCOPES = os.getenv(
+    "SPOTIFY_SCOPES",
+    "playlist-modify-private playlist-read-private user-top-read user-library-read",
+)
 
-# In-memory PKCE cache (replace with DB/Redis for production multi-instance)
-# PKCE_CACHE = {}
-STATE_FILE = Path("/tmp/pkce_state.json")
-
-def save_state(state, verifier):
-    try:
-        if STATE_FILE.exists():
-            data = json.load(STATE_FILE.open())
-        else:
-            data = {}
-        data[state] = {"verifier": verifier, "ts": time.time()}
-        with STATE_FILE.open("w") as f:
-            json.dump(data, f)
-    except Exception as e:
-        print("Save state error:", e)
-
-def load_state(state):
-    if not STATE_FILE.exists():
-        return None
-    data = json.load(STATE_FILE.open())
-    return data.pop(state, None)
 
 def login(request):
+    """Generate PKCE challenge, store state in DB, redirect to Spotify."""
     code_verifier = secrets.token_urlsafe(64)
-    code_challenge = base64.urlsafe_b64encode(
-        hashlib.sha256(code_verifier.encode()).digest()
-    ).rstrip(b"=").decode("utf-8")
-
+    code_challenge = (
+        base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode()).digest())
+        .rstrip(b"=")
+        .decode("utf-8")
+    )
     state = secrets.token_urlsafe(16)
-    # PKCE_CACHE[state] = {"verifier": code_verifier, "ts": time.time()}
-    save_state(state, code_verifier)
-    print("redirect uri", REDIRECT_URI)
+
+    # Clean up stale auth states (>10 min old)
+    AuthState.objects.filter(
+        created_at__lt=timezone.now() - timedelta(minutes=10)
+    ).delete()
+
+    AuthState.objects.create(state=state, code_verifier=code_verifier)
+
     params = {
         "client_id": CLIENT_ID,
         "response_type": "code",
@@ -63,48 +57,109 @@ def login(request):
 
 
 def callback(request):
+    """Handle Spotify OAuth callback: exchange code, fetch profile, create session."""
     error = request.GET.get("error")
     if error:
-        return JsonResponse({"error": error}, status=400)
+        frontend_url = os.getenv("FRONTEND_SUCCESS_URL", "http://localhost:3000/auth/success")
+        return HttpResponseRedirect(f"{frontend_url}?error={error}")
 
     code = request.GET.get("code")
     state = request.GET.get("state")
     if not code or not state:
-        return JsonResponse({"error": "Missing code/state"}, status=400)
+        return JsonResponse({"error": "Missing code or state"}, status=400)
 
-    # pkce = PKCE_CACHE.pop(state, None)
-    pkce = load_state(state)
-    if not pkce:
-        return JsonResponse({"error": "Invalid state"}, status=400)
+    # Look up and consume PKCE state
+    try:
+        auth_state = AuthState.objects.get(state=state)
+    except AuthState.DoesNotExist:
+        return JsonResponse({"error": "Invalid or expired state"}, status=400)
 
-    data = {
+    code_verifier = auth_state.code_verifier
+    auth_state.delete()
+
+    # Exchange authorization code for tokens
+    token_data = {
         "grant_type": "authorization_code",
         "code": code,
         "redirect_uri": REDIRECT_URI,
         "client_id": CLIENT_ID,
-        "code_verifier": pkce["verifier"],
+        "code_verifier": code_verifier,
     }
-    r = requests.post(TOKEN_URL, data=data, timeout=30)
+    try:
+        r = requests.post(TOKEN_URL, data=token_data, timeout=30)
+    except requests.RequestException as e:
+        print(f"[callback] Token exchange network error: {e}")
+        return JsonResponse({"error": "Token exchange failed (network)"}, status=500)
+
     if r.status_code != 200:
-        return JsonResponse({"error": "Token exchange failed", "details": r.text}, status=500)
+        print(f"[callback] Token exchange failed: {r.status_code} {r.text}")
+        frontend_url = os.getenv("FRONTEND_SUCCESS_URL", "http://localhost:3000/auth/success")
+        return HttpResponseRedirect(f"{frontend_url}?error=token_exchange_failed")
 
     tok = r.json()
+    access_token = tok["access_token"]
+    refresh_token = tok.get("refresh_token", "")
+    expires_in = int(tok.get("expires_in", 3600))
+    token_expires_at = timezone.now() + timedelta(seconds=expires_in)
 
-    save_path = os.getenv("SPOTIFY_TOKEN_PATH", settings.BASE_DIR / "spotify_tokens.json")
-
-    # Always recreate the file fresh
+    # Fetch Spotify user profile
     try:
-        if os.path.exists(save_path):
-            os.remove(save_path)
+        profile_r = requests.get(
+            "https://api.spotify.com/v1/me",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=15,
+        )
+        profile_r.raise_for_status()
+        profile = profile_r.json()
+        spotify_user_id = profile["id"]
+        display_name = profile.get("display_name", "")
     except Exception as e:
-        print(f"[callback] Could not remove old token file: {e}")
+        print(f"[callback] Failed to fetch user profile: {e}")
+        return JsonResponse({"error": "Failed to fetch Spotify profile"}, status=500)
 
-    with open(save_path, "w", encoding="utf-8") as f:
-        json.dump(tok, f, indent=2)
+    # Create session token and upsert user session
+    session_token = secrets.token_urlsafe(48)
 
-    # Redirect back to frontend success page
+    # Delete old sessions for this Spotify user (keep it clean)
+    UserSession.objects.filter(spotify_user_id=spotify_user_id).delete()
+
+    UserSession.objects.create(
+        session_token=session_token,
+        spotify_user_id=spotify_user_id,
+        display_name=display_name,
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_expires_at=token_expires_at,
+    )
+
     frontend_url = os.getenv("FRONTEND_SUCCESS_URL", "http://localhost:3000/auth/success")
-    return HttpResponseRedirect(f"{frontend_url}?ok=1")
+    return HttpResponseRedirect(f"{frontend_url}?session={session_token}")
 
-def auth_success(request):
-    return HttpResponse("<h1> DEV Spotify login successful!</h1><p>You may close this tab now.</p>")
+
+@api_view(["GET"])
+def auth_status(request):
+    """Check if the caller's session token is valid."""
+    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+    if not auth_header.startswith("Bearer "):
+        return Response({"authenticated": False}, status=status.HTTP_200_OK)
+
+    token = auth_header[7:]
+    try:
+        session = UserSession.objects.get(session_token=token)
+        return Response({
+            "authenticated": True,
+            "spotify_user_id": session.spotify_user_id,
+            "display_name": session.display_name,
+        })
+    except UserSession.DoesNotExist:
+        return Response({"authenticated": False})
+
+
+@api_view(["POST"])
+def logout(request):
+    """Delete the caller's session."""
+    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+        UserSession.objects.filter(session_token=token).delete()
+    return Response({"ok": True})

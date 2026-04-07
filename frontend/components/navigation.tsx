@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Filter, BarChart3, Trash2, Menu, Music, Home } from "lucide-react"
+import { CheckCircle, Filter, BarChart3, Trash2, Menu, Music, Home, ListMusic } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navigationItems = [
@@ -43,6 +43,13 @@ const navigationItems = [
     icon: BarChart3,
     description: "View listening analytics",
     badge: "Analytics",
+  },
+  {
+    title: "Playlist Builder",
+    href: "/playlist-builder",
+    icon: ListMusic,
+    description: "Build playlists from Liked Songs",
+    badge: "Builder",
   },
 ]
 

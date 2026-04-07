@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Filter, BarChart3, Trash2, ArrowRight } from "lucide-react"
+import { CheckCircle, Filter, BarChart3, Trash2, ArrowRight, ListMusic } from "lucide-react"
 import Link from "next/link"
 import { PageLayout } from "@/components/page-layout"
 
@@ -38,6 +38,14 @@ export default function HomePage() {
       href: "/top-tracks",
       color: "bg-chart-4",
       badge: "Analytics",
+    },
+    {
+      title: "Playlist Builder",
+      description: "Build custom playlists from your Liked Songs with filters and search.",
+      icon: ListMusic,
+      href: "/playlist-builder",
+      color: "bg-chart-5",
+      badge: "Builder",
     },
   ]
 

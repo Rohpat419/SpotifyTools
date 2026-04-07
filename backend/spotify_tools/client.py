@@ -7,7 +7,6 @@ import urllib.parse as up
 from typing import Dict, Generator, List, Optional
 import requests
 
-from spotify_tools.auth.user_token_from_refresh import get_user_access_token
 from spotify_tools.duplicates import compute_keep_and_delete_uris
 from spotify_tools.config import *
 
@@ -40,14 +39,12 @@ class SpotifyClient:
         self._app_token = r.json()["access_token"]
         return self._app_token
     
-    # auth token is either user token if doing a write to playlist or it's been supplied, handy for private playlist reads. ELSE use the app token for basic reads. 
     def _auth_header(self, write: bool) -> Dict[str, str]:
+        if self.user_token:
+            return {"Authorization": f"Bearer {self.user_token}"}
         if write:
-            token = get_user_access_token()
-        else: 
-            token = self._get_app_token()
-        # token = self.user_token if write or self.user_token else self._get_app_token()
-        return {"Authorization": f"Bearer {token}"}
+            raise RuntimeError("User token required for write operations")
+        return {"Authorization": f"Bearer {self._get_app_token()}"}
     
 
     @staticmethod
@@ -235,4 +232,27 @@ class SpotifyClient:
             else: 
                 print("Could not find the name of the original playlist, defaulting to Nothing")
                 return ""
-            
+
+    def get_liked_songs(self, offset: int = 0, limit: int = 50) -> dict:
+        """Fetch user's Liked Songs (GET /me/tracks). Returns the raw Spotify response."""
+        headers = self._auth_header(write=True)
+        params = {"offset": offset, "limit": min(limit, 50)}
+        r = requests.get(f"{API_URL}/me/tracks", headers=headers, params=params, timeout=TIMEOUT)
+        if r.status_code == 429:
+            retry_timer = int(r.headers.get("Retry-After", "1"))
+            time.sleep(retry_timer)
+            r = requests.get(f"{API_URL}/me/tracks", headers=headers, params=params, timeout=TIMEOUT)
+        r.raise_for_status()
+        return r.json()
+
+    def get_user_playlists(self, limit: int = 50) -> dict:
+        """Fetch current user's playlists (GET /me/playlists)."""
+        headers = self._auth_header(write=True)
+        params = {"limit": min(limit, 50)}
+        r = requests.get(f"{API_URL}/me/playlists", headers=headers, params=params, timeout=TIMEOUT)
+        if r.status_code == 429:
+            retry_timer = int(r.headers.get("Retry-After", "1"))
+            time.sleep(retry_timer)
+            r = requests.get(f"{API_URL}/me/playlists", headers=headers, params=params, timeout=TIMEOUT)
+        r.raise_for_status()
+        return r.json()
