@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Filter, BarChart3, Trash2, Menu, Music, Home, ListMusic } from "lucide-react"
+import { CheckCircle, Filter, BarChart3, Menu, Music, Home, ListMusic, Copy } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navigationItems = [
@@ -17,17 +17,10 @@ const navigationItems = [
     description: "Welcome to SpotifyTools",
   },
   {
-    title: "Duplicate Checker",
-    href: "/duplicate-checker",
-    icon: CheckCircle,
-    description: "Find duplicate tracks in playlists",
-    badge: "Analysis",
-  },
-  {
-    title: "Duplicate Deletion",
-    href: "/duplicate-deletion",
-    icon: Trash2,
-    description: "Remove duplicate tracks",
+    title: "Duplicates",
+    href: "/duplicates",
+    icon: Copy,
+    description: "Find and remove duplicate tracks",
     badge: "Cleanup",
   },
   {

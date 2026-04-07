@@ -1,26 +1,18 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Filter, BarChart3, Trash2, ArrowRight, ListMusic } from "lucide-react"
+import { Copy, Filter, BarChart3, ArrowRight, ListMusic } from "lucide-react"
 import Link from "next/link"
 import { PageLayout } from "@/components/page-layout"
 
 export default function HomePage() {
   const features = [
     {
-      title: "Duplicate Checker",
-      description: "Identify and analyze duplicate tracks in your playlists.",
-      icon: CheckCircle,
-      href: "/duplicate-checker",
+      title: "Duplicate Manager",
+      description: "Find and remove duplicate tracks from your playlists in one step.",
+      icon: Copy,
+      href: "/duplicates",
       color: "bg-chart-1",
-      badge: "Analysis",
-    },
-    {
-      title: "Duplicate Deletion",
-      description: "Remove duplicate tracks from your playlists.",
-      icon: Trash2,
-      href: "/duplicate-deletion",
-      color: "bg-chart-2",
       badge: "Cleanup",
     },
     {
@@ -73,7 +65,7 @@ export default function HomePage() {
                   </Link>
                 </Button>
                 <Button variant="outline" size="lg" className="text-base font-medium bg-transparent" asChild>
-                  <Link href="/duplicate-checker">Get Started</Link>
+                  <Link href="/duplicates">Get Started</Link>
                 </Button>
               </div>
             </div>
