@@ -12,7 +12,7 @@ import { setSessionToken } from "@/lib/api"
 export default function AuthSuccessPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [authStatus, setAuthStatus] = useState<"success" | "error" | null>(null)
+  const [authStatus, setAuthStatus] = useState<"success" | "error" | "not_approved" | null>(null)
 
   useEffect(() => {
     const session = searchParams.get("session")
@@ -20,7 +20,7 @@ export default function AuthSuccessPage() {
     const ok = searchParams.get("ok")
 
     if (error) {
-      setAuthStatus("error")
+      setAuthStatus(error === "not_approved" ? "not_approved" : "error")
       return
     }
 
@@ -40,11 +40,19 @@ export default function AuthSuccessPage() {
 
   return (
     <PageLayout
-      title={authStatus === "success" ? "Successfully Connected!" : "Authentication Failed"}
+      title={
+        authStatus === "success"
+          ? "Successfully Connected!"
+          : authStatus === "not_approved"
+            ? "Access Pending"
+            : "Authentication Failed"
+      }
       description={
         authStatus === "success"
           ? "Your Spotify account has been connected"
-          : "There was an issue connecting your account"
+          : authStatus === "not_approved"
+            ? "Your account needs to be approved first"
+            : "There was an issue connecting your account"
       }
     >
       <div className="max-w-2xl mx-auto space-y-6">
@@ -74,6 +82,43 @@ export default function AuthSuccessPage() {
                 <Button onClick={() => router.push("/")} className="flex-1 bg-[#1DB954] hover:bg-[#1ed760]">
                   <Home className="mr-2 h-4 w-4" />
                   Explore Features
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : authStatus === "not_approved" ? (
+          <Card className="border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-transparent">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center mb-4">
+                <AlertCircle className="h-8 w-8 text-white" />
+              </div>
+              <CardTitle className="text-2xl text-amber-500">Account Not Approved</CardTitle>
+              <CardDescription>
+                SpotifyTools is currently in development mode. Your Spotify account needs to be
+                added to the approved users list before you can use the app.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert>
+                <Music className="h-4 w-4" />
+                <AlertDescription>
+                  Ask the app owner to add your Spotify email address in the{" "}
+                  <a
+                    href="https://developer.spotify.com/dashboard"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline font-medium"
+                  >
+                    Spotify Developer Dashboard
+                  </a>{" "}
+                  under <strong>Settings → User Management</strong>. Once added, try connecting again.
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button onClick={() => router.push("/")} variant="outline" className="flex-1">
+                  <Home className="mr-2 h-4 w-4" />
+                  Return Home
                 </Button>
               </div>
             </CardContent>

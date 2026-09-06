@@ -123,9 +123,18 @@ urL HERE
 
 ## Hosting
 - **Frontend:** Hosted on Vercel → [Live App](https://spotify-tools-xi.vercel.app/). Built using [v0](https://v0.app/chat). 
-- **Backend:** Hosted on Render → [Health Check](https://spotify-tools-eozl.onrender.com/api/debug/ping). Built with the help of [GPT-5](https://chat.openai.com/).
+- **Backend:** Hosted on Render → [Health Check](https://spotify-tools-jo2u.onrender.com/api/debug/ping). Built with the help of [GPT-5](https://chat.openai.com/) and [Claude](https://claude.ai).
 
-## Future Steps: 
+## What's Been Done (since initial release)
+
+- ~~Multi-user support~~ — Migrated from a single shared token file to a PostgreSQL-backed, per-user session system with bearer tokens. Every user gets their own session now. Ironic timing given the 5-user cap.
+- ~~Duplicate Checker/Deleter UX~~ — Merged into a single Duplicate Manager tab with an inline scan → review → delete flow.
+- ~~Playlist selection UX~~ — The Playlist Builder fetches your playlists and liked songs directly. No more copying playlist IDs by hand.
+- ~~OAuth reliability~~ — Rewrote the auth flow with DB-backed PKCE state, proper token refresh, and meaningful error pages (including a dedicated page for users blocked by Spotify's Development Mode restrictions).
+
+## Future Steps
+
+With the 5-user cap, most of these are aspirational — things I'd build if Spotify ever reopens the door.
 
 ### UX Improvements
 
@@ -141,7 +150,7 @@ Fetching a user's playlists and letting them choose which one to filter for expl
 
 ### New Features
 
-Incorporate more user analytics (other than just Top N Tracks/Artists for a time horizon) but this would require the user to download and upload their data. Since the Spotify Web API does not give an endpoint for this data. 
+Incorporate more user analytics beyond Top N — this would require users to upload their extended streaming history export from Spotify, since the API doesn't provide it.
 
 Build an email notification system to alert users when followed artists release new music. Spotify’s own system is biased toward popular artists so people may not get updates from an artist they listen to unless that artist is popular.
 
@@ -150,7 +159,7 @@ The solution to this would be a local GPT model which is quite a bit of work to 
 
 ### Misc
 
-Conduct a security review of the entire system, patch accordingly. Testing different strings in the input boxes. Seeing if secrets or tokens get leaked at any point. 
+Retry logic for transient Spotify API failures. The backend should be resilient to Spotify's occasional hiccups.
 
 ## Challenges and Lessons Learned: 
 **Spotify API Updates:** As mentioned earlier, the Spotify API being updated to only allow up to 5 users that I manually register to use the app is a major limitation that has effectively killed the app. A dev-lesson here is that dependency on a third-party can go wrong on a whim. In this case, the entire project depended on Spotify so this was unavoiable but a lesson learned nonetheless for industry projects. 
@@ -164,5 +173,7 @@ Conduct a security review of the entire system, patch accordingly. Testing diffe
 - OAuth issues: The Spotify OAuth flow has been a thorn in my side ever since this project's first iteration a few years ago. From the redirect uri to the enforced success page, there were difficulties everywhere. Testing the POC was difficult, getting things right was difficult because of how strict Spotify is (like 127.0.0.1 is ok as a local redirect url but not localhost, which was confusing) .
 - More OAuth issues: Converting to prod was also difficult since now there needed to be a redirect to a page on the deployed frontend. The auth flow is still finicky like you can't hit the auth flow from the same browser in succession (within like a minute) or else Spotify will throw an error. 
 - All the while, AI (GPT-5) didn't know the fixes for what I was dealing with since the Spotify error messages could mean many different errors (for example: "Invalid URL" being returned after signing in to Spotify, the redirect URL could be wrong OR the redirect URL could be un-registered in the Spotify developer dashboard). It comes down to training data and the Spotify OAuth flow specifically is fairly niche so it makes sense that GPT-5 struggled with it due to a lack of examples in its training data.
+
+**Spotify's February 2026 Dev Mode Changes:** Just when the app was in the best shape it had ever been — proper per-user auth, new features, cleaner UX — Spotify pulled the rug out. The irony of spending a weekend building multi-user support only to learn the platform now caps you at 5 users is not lost on me. Sometimes you build the right thing at the wrong time.
 
 **Logging:** Logging is a developer's best friend. I think the less logging I had when dealing with an OAuth issue, the longer it took to debug. Adding more logging statements and try/except blocks were extremely important in debugging the errors. Otherwise, the errors were ridiculously opaque. 

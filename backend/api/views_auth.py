@@ -113,9 +113,16 @@ def callback(request):
         profile = profile_r.json()
         spotify_user_id = profile["id"]
         display_name = profile.get("display_name", "")
+    except requests.exceptions.HTTPError as e:
+        print(f"[callback] Failed to fetch user profile: {e}")
+        frontend_url = os.getenv("FRONTEND_SUCCESS_URL", "http://localhost:3000/auth/success")
+        if profile_r.status_code == 403:
+            return HttpResponseRedirect(f"{frontend_url}?error=not_approved")
+        return HttpResponseRedirect(f"{frontend_url}?error=profile_fetch_failed")
     except Exception as e:
         print(f"[callback] Failed to fetch user profile: {e}")
-        return JsonResponse({"error": "Failed to fetch Spotify profile"}, status=500)
+        frontend_url = os.getenv("FRONTEND_SUCCESS_URL", "http://localhost:3000/auth/success")
+        return HttpResponseRedirect(f"{frontend_url}?error=profile_fetch_failed")
 
     # Create session token and upsert user session
     session_token = secrets.token_urlsafe(48)
