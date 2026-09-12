@@ -16,6 +16,7 @@ urlpatterns = [
     # Auth endpoints
     path("auth/login", views_auth.login),
     path("auth/callback", views_auth.callback),
+    path("auth/exchange", views_auth.exchange),
     path("auth/status", views_auth.auth_status),
     path("auth/logout", views_auth.logout),
 

@@ -29,3 +29,10 @@ class AuthState(models.Model):
 
     def __str__(self):
         return f"AuthState {self.state[:8]}..."
+
+
+class LoginHandoff(models.Model):
+    """Single-use code exchanged for a session over POST, valid for 60 seconds."""
+    code = models.CharField(max_length=64, unique=True)
+    session = models.ForeignKey(UserSession, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)

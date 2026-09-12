@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 import os
-import time
+import re
 import urllib.parse as up
 from typing import Dict, Generator, List, Optional
 import requests
@@ -48,17 +48,39 @@ class SpotifyClient:
     
 
     @staticmethod
-    def playlist_id_from_input(input: str) -> str: 
-        if input.startswith("http"):
-            parsed = up.urlparse(input)
-            # Remove trailing / then split the url based on / . This prevents the final string from being ""
-            parts = parsed.path.strip("/").split("/")
-            if len(parts) >= 2 and parts[-2] == "playlist":
-                return parts[-1]
-        
-        print("Playlist ID not filtered by parser, either correct ID given or the parser was skipped accidentally")        
-        return input
+    def playlist_id_from_input(value: str) -> str:
+        if not isinstance(value, str):
+            raise ValueError("Invalid playlist ID")
+        value = value.strip()
+        if value.startswith("spotify:playlist:"):
+            value = value.removeprefix("spotify:playlist:")
+        elif value.startswith("https://"):
+            parsed = up.urlparse(value)
+            if parsed.netloc != "open.spotify.com" or not re.fullmatch(r"/playlist/[A-Za-z0-9]{22}/?", parsed.path):
+                raise ValueError("Invalid playlist URL")
+            value = parsed.path.strip("/").split("/")[-1]
+        if not re.fullmatch(r"[A-Za-z0-9]{22}", value):
+            raise ValueError("Invalid playlist ID")
+        return value
 
+    def playlist_snapshot(self, playlist_id: str) -> str:
+        pid = self.playlist_id_from_input(playlist_id)
+        r = requests.get(f"{API_URL}/playlists/{pid}", headers=self._auth_header(False),
+                         params={"fields": "snapshot_id"}, timeout=TIMEOUT)
+        r.raise_for_status()
+        return r.json()["snapshot_id"]
+
+    def remove_selected_duplicates(self, playlist_id, items, positions):
+        # Spotify removes all occurrences of a URI. Restore unselected occurrences
+        # at their resulting positions; untouched tracks retain their added dates.
+        affected = {items[p]["track"]["uri"] for p in positions}
+        retained = [item for p, item in enumerate(items) if p not in positions]
+        restorations = [(p, item["track"]["uri"]) for p, item in enumerate(retained)
+                        if (item.get("track") or {}).get("uri") in affected]
+        self.remove_by_uri(playlist_id, sorted(affected))
+        for position, uri in restorations:
+            self.add_items(playlist_id, [uri], position=position)
+        return {"original": len(items), "removed": len(positions), "kept": len(retained)}
 
     def iter_playlist_items(self, playlist_id: str, *, write: bool = False):
         pid = self.playlist_id_from_input(playlist_id)
@@ -67,46 +89,14 @@ class SpotifyClient:
         url = f"{API_URL}/playlists/{pid}/tracks"
         params = {"limit": 100}
 
-        retry_counter = 0
-        tried_user_auth = False
-
-        while True and retry_counter < 10:
+        while url:
             r = requests.get(url, headers=headers, params=params, timeout=TIMEOUT)
-
-            # if playlist is private/restricted and we used app token, retry with user token
-            if r.status_code == 404 and not write and not tried_user_auth:
-                print("Playlist may be private or restricted; retrying with user auth...")
-                headers = self._auth_header(write=True)
-                tried_user_auth = True
-                continue
-
-            retry_counter += 1
-            if r.status_code == 429:
-                retry_timer = int(r.headers.get("Retry-After", "1"))
-                time.sleep(retry_timer)
-                continue
-
             r.raise_for_status()
             data = r.json()
-            for item in data.get("items", []):
-                yield item
+            yield from data.get("items", [])
             url = data.get("next")
-            if not url:
-                break
+            params = None
 
-    
-    # Deletes all songs that are identified as duplicate, too destructive
-    # def remove_tracks(self, playlist_url: str, deletion_payload: dict) -> dict: 
-    #     playlist_id = self.playlist_id_from_input(playlist_url)
-    #     headers = self._auth_header(write=True)
-    #     headers.update({"Content-Type": "application/json"})
-    #     r = requests.delete(f"{API_URL}/playlists/{playlist_id}/tracks",
-    #                         headers=headers, json=deletion_payload, timeout=TIMEOUT)
-    #     r.raise_for_status()
-    #     return r.json()
-        
-
-    # OPTIONAL LOGIC: replaces items. Not a big fan of this idea
     def replace_items(self, playlist_id: str, uris: List[str]) -> dict:
         """Replace the playlist's items with up to 100 URIs."""
         if len(uris) > 100:
@@ -204,44 +194,15 @@ class SpotifyClient:
 
         url = f"{API_URL}/playlists/{pid}"
 
-        retry_counter = 0
-        while True and retry_counter < 5: 
-            r = requests.get(url, headers=headers, timeout=TIMEOUT)
-            retry_counter += 1
-            if r.status_code == 429: 
-                retry_timer = int(r.headers.get("Retry-After", "1"))
-                time.sleep(retry_timer)
-                continue
-            retry_counter += 1
-            try: 
-                r.raise_for_status()
-            except requests.HTTPError as e:
-                status = getattr(e.response, "status_code", None)
-                if status in (401, 404) and not write:
-                    print("Playlist may be private or restricted; retrying with user auth...")
-                    headers = self._auth_header(write=True)
-                    # loop will retry with new headers
-                    continue
-                else:
-                    raise
-
-            data = r.json()
-            
-            if data.get("name"): 
-                return data["name"]
-            else: 
-                print("Could not find the name of the original playlist, defaulting to Nothing")
-                return ""
+        r = requests.get(url, headers=headers, timeout=TIMEOUT)
+        r.raise_for_status()
+        return r.json().get("name", "")
 
     def get_liked_songs(self, offset: int = 0, limit: int = 50) -> dict:
         """Fetch user's Liked Songs (GET /me/tracks). Returns the raw Spotify response."""
         headers = self._auth_header(write=True)
         params = {"offset": offset, "limit": min(limit, 50)}
         r = requests.get(f"{API_URL}/me/tracks", headers=headers, params=params, timeout=TIMEOUT)
-        if r.status_code == 429:
-            retry_timer = int(r.headers.get("Retry-After", "1"))
-            time.sleep(retry_timer)
-            r = requests.get(f"{API_URL}/me/tracks", headers=headers, params=params, timeout=TIMEOUT)
         r.raise_for_status()
         return r.json()
 
@@ -250,9 +211,5 @@ class SpotifyClient:
         headers = self._auth_header(write=True)
         params = {"limit": min(limit, 50)}
         r = requests.get(f"{API_URL}/me/playlists", headers=headers, params=params, timeout=TIMEOUT)
-        if r.status_code == 429:
-            retry_timer = int(r.headers.get("Retry-After", "1"))
-            time.sleep(retry_timer)
-            r = requests.get(f"{API_URL}/me/playlists", headers=headers, params=params, timeout=TIMEOUT)
         r.raise_for_status()
         return r.json()

@@ -1,41 +1,36 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { PageLayout } from "@/components/page-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle, AlertCircle, Music, ArrowLeft, Home } from "lucide-react"
-import { setSessionToken } from "@/lib/api"
+import { api, setSessionToken } from "@/lib/api"
 
 export default function AuthSuccessPage() {
+  const exchanged = useRef(false)
   const searchParams = useSearchParams()
   const router = useRouter()
   const [authStatus, setAuthStatus] = useState<"success" | "error" | "not_approved" | null>(null)
 
   useEffect(() => {
-    const session = searchParams.get("session")
+    if (exchanged.current) return
+    exchanged.current = true
+    const code = new URLSearchParams(window.location.hash.slice(1)).get("code")
     const error = searchParams.get("error")
-    const ok = searchParams.get("ok")
-
-    if (error) {
+    window.history.replaceState({}, "", window.location.pathname)
+    if (error || !code) {
       setAuthStatus(error === "not_approved" ? "not_approved" : "error")
       return
     }
-
-    if (session) {
-      setSessionToken(session)
-      setAuthStatus("success")
-      return
-    }
-
-    // Legacy support for ?ok=1 (shouldn't happen with new flow)
-    if (ok === "1") {
-      setAuthStatus("success")
-    } else {
-      setAuthStatus("error")
-    }
+    api.exchangeLoginCode(code).then(response => {
+      if (response.success && response.data) {
+        setSessionToken(response.data.session_token)
+        setAuthStatus("success")
+      } else setAuthStatus("error")
+    })
   }, [searchParams])
 
   return (

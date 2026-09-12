@@ -28,14 +28,16 @@ def _has_cjk(s: str) -> bool:
 # default accent strip logic destroyed non-latin characters, avoid this
 def _strip_accents_latin_only(s: str) -> str:
     out = []
-    for ch in unicodedata.normalize("NFKD", s):
-        name = unicodedata.name(ch, "")
-        if "LATIN" in name and unicodedata.combining(ch):
-            # drop combining mark on Latin letters
-            continue
-        out.append(ch)
-    # recompose
+    latin_base = False
+    for ch in unicodedata.normalize("NFD", s):
+        if unicodedata.combining(ch):
+            if not latin_base:
+                out.append(ch)
+        else:
+            latin_base = "LATIN" in unicodedata.name(ch, "")
+            out.append(ch)
     return unicodedata.normalize("NFC", "".join(out))
+
 
 # Strip accents, 
 # if strict is true, "Notion remaster" and "Notion" would be different songs. strict==true only removes accents.

@@ -7,22 +7,29 @@ export interface ApiResponse<T> {
   message?: string
 }
 
-export interface DuplicateCheckResult {
-  groups: any[]
-  count: number
+export interface DuplicateTrack {
+  name: string
+  artists: string[]
+  album: string
+  uri: string
+  duration_ms: number
+  added_at: string
+  playlist_idx: number
 }
-
+export interface DuplicateCheckResult {
+  groups: { key: [string, string[], number]; tracks: DuplicateTrack[] }[]
+  count: number
+  snapshot_id: string
+}
 export interface DuplicateDeletionResult {
-  original_count?: number
-  kept_count?: number
-  removed_count?: number
-  playlist_id?: string
-  [key: string]: any
+  original: number
+  removed: number
+  kept: number
 }
 
 export interface ExplicitTrack {
   uri: string
-  track_name: string
+  name: string
   artists: string[]
   reason: string
   confidence?: number
@@ -107,12 +114,7 @@ export function clearSessionToken(): void {
 
 // ── API base URL ───────────────────────────────────────────────────────────
 
-const getApiBaseUrl = () => {
-  const env = (typeof globalThis !== "undefined" && globalThis.process?.env) || {}
-  return env.NEXT_PUBLIC_API_BASE_URL || "https://spotify-tools-jo2u.onrender.com"
-}
-
-const API_BASE_URL = getApiBaseUrl()
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000"
 
 export { API_BASE_URL }
 
@@ -200,6 +202,8 @@ export const formatError = (error: unknown): string => {
         return error.message
     }
   }
+  if (error instanceof Error && error.name === "AbortError") return "The request timed out. Check your playlist before retrying a change."
+  if (error instanceof TypeError) return "Could not reach the server. Please check your connection."
   if (error instanceof Error) return error.message
   return "An unexpected error occurred"
 }
@@ -210,10 +214,11 @@ async function apiFetch<T>(endpoint: string, init: RequestInit = {}): Promise<Ap
   try {
     const response = await authFetch(endpoint, init)
     if (!response.ok) {
+      if (response.status === 401) clearSessionToken()
       throw new ApiError(
-        `HTTP ${response.status}: ${response.statusText}`,
+        (await response.json().catch(() => ({}))).detail || `Request failed (${response.status})`,
         response.status,
-        `HTTP_${response.status}`,
+        undefined,
       )
     }
     const data = await response.json()
@@ -227,6 +232,9 @@ async function apiFetch<T>(endpoint: string, init: RequestInit = {}): Promise<Ap
 
 export const enhancedApi = {
   // ── Auth ──
+  async exchangeLoginCode(code: string): Promise<ApiResponse<{ session_token: string }>> {
+    return apiFetch("/api/auth/exchange", { method: "POST", body: JSON.stringify({ code }) })
+  },
   async checkAuthStatus(): Promise<ApiResponse<AuthStatus>> {
     return apiFetch<AuthStatus>("/api/auth/status")
   },
@@ -245,12 +253,12 @@ export const enhancedApi = {
     })
   },
 
-  async deleteDuplicates(playlistUrl: string): Promise<ApiResponse<DuplicateDeletionResult>> {
+  async deleteDuplicates(playlistUrl: string, positions: number[], snapshotId: string): Promise<ApiResponse<DuplicateDeletionResult>> {
     const v = validatePlaylistUrl(playlistUrl)
     if (!v.isValid) return { success: false, error: v.error }
     return apiFetch<DuplicateDeletionResult>("/api/delete_duplicate_tracks", {
       method: "POST",
-      body: JSON.stringify({ playlist_id: v.playlistId }),
+      body: JSON.stringify({ playlist_id: v.playlistId, positions, snapshot_id: snapshotId, strict: false, tol_secs: 5 }),
     })
   },
 
@@ -258,12 +266,13 @@ export const enhancedApi = {
   async filterExplicitContent(
     playlistUrl: string,
     mode: "metadata" | "lyrics",
+    extraBannedWords: string[] = [],
   ): Promise<ApiResponse<ExplicitFilterResult>> {
     const v = validatePlaylistUrl(playlistUrl)
     if (!v.isValid) return { success: false, error: v.error }
     return apiFetch<ExplicitFilterResult>("/api/explicit_report", {
       method: "POST",
-      body: JSON.stringify({ playlist_id: v.playlistId, mode }),
+      body: JSON.stringify({ playlist_id: v.playlistId, mode, extra_banned_words: extraBannedWords }),
     })
   },
 

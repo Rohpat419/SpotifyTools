@@ -24,7 +24,6 @@ import {
   Loader2,
   AlertCircle,
   Music,
-  Users,
   Trash2,
   AlertTriangle,
   RotateCcw,
@@ -35,6 +34,7 @@ import { SpotifyAuth } from "@/components/spotify-auth"
 type Stage = "input" | "results" | "deleted"
 
 export default function DuplicatesPage() {
+  const [selected, setSelected] = useState<number[]>([])
   const [playlistUrl, setPlaylistUrl] = useState("")
 
   // Scan state
@@ -62,6 +62,7 @@ export default function DuplicatesPage() {
       const response = await api.checkDuplicates(playlistUrl)
       if (response.success && response.data) {
         setScanResult(response.data)
+        setSelected(response.data.groups.flatMap(g => g.tracks.slice(1).map(t => t.playlist_idx)).slice(0, 100))
         setStage("results")
       } else {
         setError(response.error || "Failed to check duplicates")
@@ -79,12 +80,14 @@ export default function DuplicatesPage() {
     setError(null)
 
     try {
-      const response = await api.deleteDuplicates(playlistUrl)
+      const response = await api.deleteDuplicates(playlistUrl, selected, scanResult!.snapshot_id)
       if (response.success && response.data) {
         setDeleteResult(response.data)
         setStage("deleted")
       } else {
         setError(response.error || "Failed to delete duplicates")
+        setStage("input")
+        setScanResult(null)
       }
     } catch {
       setError("An unexpected error occurred")
@@ -106,7 +109,7 @@ export default function DuplicatesPage() {
   return (
     <PageLayout
       title="Duplicate Manager"
-      description="Scan your Spotify playlists for duplicates and remove them in one step."
+      description="Scan your Spotify playlists for duplicates and choose which copies to remove."
     >
       <div className="max-w-4xl mx-auto space-y-8">
         <SpotifyAuth
@@ -137,7 +140,7 @@ export default function DuplicatesPage() {
                   type="text"
                   placeholder="https://open.spotify.com/playlist/... or playlist ID"
                   value={playlistUrl}
-                  onChange={(e) => setPlaylistUrl(e.target.value)}
+                  onChange={(e) => { setPlaylistUrl(e.target.value); setScanResult(null); setStage("input"); setSelected([]) }}
                   disabled={isScanning || isDeleting}
                   className="w-full"
                   aria-describedby="playlist-url-help"
@@ -165,7 +168,7 @@ export default function DuplicatesPage() {
                   )}
                 </Button>
                 {stage !== "input" && (
-                  <Button type="button" variant="outline" onClick={startOver}>
+                  <Button type="button" variant="outline" onClick={startOver} disabled={isScanning || isDeleting}>
                     <RotateCcw className="mr-2 h-4 w-4" />
                     Start Over
                   </Button>
@@ -214,22 +217,20 @@ export default function DuplicatesPage() {
                   <CardContent>
                     <div className="space-y-3">
                       {scanResult.groups.map((group, index) => (
-                        <div key={index} className="flex items-start justify-between border border-border rounded-lg p-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Music className="h-4 w-4 text-muted-foreground shrink-0" />
-                              <h3 className="font-semibold text-foreground truncate">{group[0]}</h3>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Users className="h-3 w-3 shrink-0" />
-                              <span className="truncate">{group[1].join(", ")}</span>
-                            </div>
-                          </div>
-                          <Badge variant="secondary" className="ml-4 shrink-0">
-                            {Math.floor(group[2] / 60)}:
-                            {String(Math.floor(group[2] % 60)).padStart(2, "0")}
-                          </Badge>
-                        </div>
+                        <fieldset key={index} className="border border-border rounded-lg p-4 space-y-3">
+                          <legend className="px-2 font-semibold">{group.key[0]} · {group.key[1].join(", ")}</legend>
+                          {group.tracks.map(track => (
+                            <label key={track.playlist_idx} className="flex gap-3 items-center p-2 rounded hover:bg-muted/50">
+                              <input type="checkbox" aria-label={`Remove ${track.name}, position ${track.playlist_idx + 1}`}
+                                checked={selected.includes(track.playlist_idx)}
+                                disabled={isDeleting || (!selected.includes(track.playlist_idx) &&
+                                  (selected.length >= 100 || group.tracks.filter(t => !selected.includes(t.playlist_idx)).length <= 1))}
+                                onChange={e => setSelected(current => e.target.checked ? [...current, track.playlist_idx] : current.filter(p => p !== track.playlist_idx))} />
+                              <span className="flex-1"><strong>{track.name}</strong><span className="block text-sm text-muted-foreground">{track.album} · Position {track.playlist_idx + 1} · Added {track.added_at?.slice(0, 10) || "unknown"}</span></span>
+                              <Badge variant="secondary">{Math.floor(track.duration_ms / 60000)}:{String(Math.floor(track.duration_ms / 1000) % 60).padStart(2, "0")}</Badge>
+                            </label>
+                          ))}
+                        </fieldset>
                       ))}
                     </div>
                   </CardContent>
@@ -242,13 +243,13 @@ export default function DuplicatesPage() {
                       <div>
                         <p className="font-medium text-foreground">Ready to clean up?</p>
                         <p className="text-sm text-muted-foreground">
-                          Remove all duplicates while keeping the first occurrence of each track.
+                          Select up to 100 copies to remove. Leave at least one copy in each group.
                         </p>
                       </div>
                       <Button
                         variant="destructive"
                         onClick={() => setShowConfirm(true)}
-                        disabled={isDeleting}
+                        disabled={isDeleting || selected.length === 0}
                       >
                         {isDeleting ? (
                           <>
@@ -258,7 +259,7 @@ export default function DuplicatesPage() {
                         ) : (
                           <>
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Remove Duplicates
+                            Remove Selected ({selected.length})
                           </>
                         )}
                       </Button>
@@ -348,14 +349,11 @@ export default function DuplicatesPage() {
                 <AlertTriangle className="h-5 w-5 text-destructive" />
                 Confirm Duplicate Removal
               </AlertDialogTitle>
-              <AlertDialogDescription className="space-y-2">
-                <p>
-                  This will permanently remove {scanResult?.count} group{scanResult?.count !== 1 ? "s" : ""} of
-                  duplicate tracks from your playlist.
-                </p>
-                <p className="text-sm font-medium">
-                  The first occurrence of each track will be kept. This action cannot be undone.
-                </p>
+              <AlertDialogDescription>
+                Remove {selected.length} selected copies? Unselected copies are kept in order.
+                Spotify removes all copies of identical track IDs, so retained copies of those IDs
+                must be reinserted and receive new added dates. If a request fails midway, changes
+                may be partial; inspect Spotify and scan again. This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

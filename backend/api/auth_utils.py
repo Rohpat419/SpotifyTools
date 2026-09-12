@@ -10,6 +10,8 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from api.models import UserSession
+from django.conf import settings
+from api.errors import SessionExpired
 
 TOKEN_URL = "https://accounts.spotify.com/api/token"
 CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "")
@@ -23,7 +25,11 @@ def get_session_from_request(request):
         return None
     token = auth_header[7:]
     try:
-        return UserSession.objects.get(session_token=token)
+        session = UserSession.objects.get(session_token=token)
+        if session.created_at <= timezone.now() - timedelta(days=settings.SESSION_MAX_AGE_DAYS):
+            session.delete()
+            return None
+        return session
     except UserSession.DoesNotExist:
         return None
 
@@ -38,12 +44,11 @@ def get_spotify_token(session: UserSession) -> str:
     headers = {"Authorization": f"Basic {basic}"}
     data = {"grant_type": "refresh_token", "refresh_token": session.refresh_token}
 
-    try:
-        r = requests.post(TOKEN_URL, headers=headers, data=data, timeout=30)
-        r.raise_for_status()
-    except requests.RequestException as e:
-        print(f"[auth_utils] Token refresh failed: {e}")
-        raise RuntimeError("Failed to refresh Spotify token") from e
+    r = requests.post(TOKEN_URL, headers=headers, data=data, timeout=30)
+    if r.status_code in (400, 401):
+        session.delete()
+        raise SessionExpired()
+    r.raise_for_status()
 
     tok = r.json()
     session.access_token = tok["access_token"]
@@ -65,11 +70,5 @@ def require_auth(request):
             {"detail": "Authentication required. Please connect your Spotify account."},
             status=status.HTTP_401_UNAUTHORIZED,
         )
-    try:
-        access_token = get_spotify_token(session)
-    except RuntimeError as e:
-        return None, Response(
-            {"detail": str(e)},
-            status=status.HTTP_401_UNAUTHORIZED,
-        )
+    access_token = get_spotify_token(session)
     return session, access_token

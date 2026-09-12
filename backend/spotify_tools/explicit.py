@@ -5,7 +5,7 @@ from typing import Dict, Iterable, List, Optional
 
 import requests
 
-from .client import SpotifyClient, API_URL
+from .client import SpotifyClient
 
 _session = requests.Session()
 
@@ -54,9 +54,12 @@ def fetch_lyrics_lrclib(artist: str, title: str, duration_ms: Optional[int] = No
             # strip timestamps if synced
             txt = re.sub(r"\[[0-9:\.]+\]", " ", txt)
             return txt.strip() or None
+        if r.status_code == 404:
+            return None
+        r.raise_for_status()
         return None
-    except Exception:
-        return None
+    except ValueError:
+        raise requests.RequestException("Invalid lyrics service response")
 
 def scan_lyrics_for_words(lyrics: str, banned: Iterable[str]) -> List[str]:
     words = set(_normalize_words(lyrics))
@@ -75,22 +78,11 @@ def explicit_report_from_playlist(
     - lyrics: LRCLIB scan; fallback to metadata if no lyrics found
     """
 
-    banned = set(load_banned_words_from_purgomalum())
+    banned = set(load_banned_words_from_purgomalum()) if mode == "lyrics" else set()
     if extra_banned_words:
         banned |= {w.lower() for w in extra_banned_words if w}
 
-    try: 
-        items = list(client.iter_playlist_items(playlist_id, write=False))
-    except requests.HTTPError as e:
-        status = getattr(e.response, "status_code", None) 
-        if status in (401, 404): 
-            print("Playlist may be private or restricted; retrying with user auth...")
-            items = list(client.iter_playlist_items(playlist_id, write=True))
-            print("User auth succeeded, starting scans now\n")
-        else: 
-            raise
-
-    print(f"\nScanning {len(items)} tracks...")
+    items = list(client.iter_playlist_items(playlist_id, write=False))
     out: List[Dict] = []
     for idx, item in enumerate(items, 1):
         track = item.get("track") or {}
@@ -132,14 +124,6 @@ def explicit_report_from_playlist(
                         "uri": uri,
                         "reason": f"lyrics contain banned words:{','.join(hits)}"
                     })
-            elif not lyrics:
-                print("Lyrics could not be found for the following song:")
-                print(f"{name} - {', '.join(artists)}\n")
-
-
-
-        if idx % 25 == 0 or idx == len(items): 
-            print(f"Processed {idx}/{len(items)} tracks\n")
     return out
 
 def print_explicit_report(rows: List[Dict]) -> None:

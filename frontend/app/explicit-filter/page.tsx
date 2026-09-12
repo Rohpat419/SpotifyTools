@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
-import { Filter, Loader2, AlertCircle, CheckCircle, Music, Users, Shield, Plus, Trash2, Info } from "lucide-react"
+import { Filter, Loader2, AlertCircle, CheckCircle, Music, Users, Shield, Plus, Trash2 } from "lucide-react"
 import { api, type ExplicitFilterResult } from "@/lib/api"
 import { SpotifyAuth } from "@/components/spotify-auth"
 
@@ -21,6 +21,7 @@ type ActionType = "none" | "create_clean" | "remove_explicit"
 
 export default function ExplicitFilterPage() {
   const [playlistUrl, setPlaylistUrl] = useState("")
+  const [extraWords, setExtraWords] = useState("")
   const [mode, setMode] = useState<FilterMode>("metadata")
   const [isScanning, setIsScanning] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -39,7 +40,7 @@ export default function ExplicitFilterPage() {
     setActionResult(null)
 
     try {
-      const response = await api.filterExplicitContent(playlistUrl, mode)
+      const response = await api.filterExplicitContent(playlistUrl, mode, mode === "lyrics" ? [...new Set(extraWords.split(",").map(w => w.trim().toLowerCase()).filter(Boolean))] : [])
       if (response.success && response.data) {
         setResult(response.data)
       } else {
@@ -89,6 +90,7 @@ export default function ExplicitFilterPage() {
   const resetForm = () => {
     setPlaylistUrl("")
     setMode("metadata")
+    setExtraWords("")
     setResult(null)
     setError(null)
     setSelectedAction("none")
@@ -130,8 +132,8 @@ export default function ExplicitFilterPage() {
                   type="text"
                   placeholder="https://open.spotify.com/playlist/... or playlist ID"
                   value={playlistUrl}
-                  onChange={(e) => setPlaylistUrl(e.target.value)}
-                  disabled={isScanning}
+                  onChange={(e) => { setPlaylistUrl(e.target.value); setResult(null); setActionResult(null) }}
+                  disabled={isScanning || isProcessing}
                   className="w-full"
                   aria-describedby="playlist-url-help"
                 />
@@ -142,7 +144,7 @@ export default function ExplicitFilterPage() {
 
               <div className="space-y-3">
                 <Label>Scanning Mode</Label>
-                <RadioGroup value={mode} onValueChange={(value) => setMode(value as FilterMode)} disabled={isScanning}>
+                <RadioGroup value={mode} onValueChange={(value) => { setMode(value as FilterMode); setResult(null); setActionResult(null) }} disabled={isScanning || isProcessing}>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="metadata" id="metadata" />
                     <Label htmlFor="metadata" className="flex-1 cursor-pointer">
@@ -151,7 +153,7 @@ export default function ExplicitFilterPage() {
                         <div>
                           <div className="font-medium">Metadata Scanning</div>
                           <div className="text-sm text-muted-foreground">
-                            Uses Spotify's explicit content flags (faster, less accurate)
+                            Uses Spotify metadata flags (fast)
                           </div>
                         </div>
                       </div>
@@ -165,7 +167,7 @@ export default function ExplicitFilterPage() {
                         <div>
                           <div className="font-medium">Lyrics Analysis</div>
                           <div className="text-sm text-muted-foreground">
-                            Analyzes actual lyrics content (slower, more accurate)
+                            Checks available lyrics and Spotify metadata (slower; lyrics may be missing)
                           </div>
                         </div>
                       </div>
@@ -173,6 +175,15 @@ export default function ExplicitFilterPage() {
                   </div>
                 </RadioGroup>
               </div>
+
+              {mode === "lyrics" && <div className="space-y-2">
+                <Label htmlFor="banned-words">Custom banned words (optional)</Label>
+                <Input id="banned-words" value={extraWords} placeholder="word, another"
+                  disabled={isScanning || isProcessing}
+                  onChange={e => { setExtraWords(e.target.value); setResult(null); setActionResult(null) }}
+                  aria-describedby="banned-words-help" />
+                <p id="banned-words-help" className="text-sm text-muted-foreground">Comma-separated English words, up to 100. Case-insensitive whole-word matching; adds to the default list.</p>
+              </div>}
 
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button type="submit" disabled={!playlistUrl.trim() || isScanning}>
@@ -189,7 +200,7 @@ export default function ExplicitFilterPage() {
                   )}
                 </Button>
                 {(result || error) && (
-                  <Button type="button" variant="outline" onClick={resetForm}>
+                  <Button type="button" variant="outline" onClick={resetForm} disabled={isScanning || isProcessing}>
                     Start Over
                   </Button>
                 )}
@@ -283,7 +294,7 @@ export default function ExplicitFilterPage() {
                 <CardContent className="text-center py-8">
                   <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-foreground mb-2">No Explicit Content Found!</h3>
-                  <p className="text-muted-foreground">Your playlist is clean - no explicit tracks were detected.</p>
+                  <p className="text-muted-foreground">No tracks were flagged. Missing lyrics fall back to Spotify metadata; this is not a guarantee of clean content.</p>
                 </CardContent>
               </Card>
             )}
@@ -301,7 +312,6 @@ export default function ExplicitFilterPage() {
                     onValueChange={(value) => setSelectedAction(value as ActionType)}
                     disabled={isProcessing}
                   >
-                    {/* Don't give a Do Nothing option to user, unnecessary */}
                     {/* <div className="flex items-center space-x-2">
                       <RadioGroupItem value="none" id="none" />
                       <Label htmlFor="none" className="flex-1 cursor-pointer">
@@ -348,7 +358,7 @@ export default function ExplicitFilterPage() {
 
                   <Button
                     onClick={handleAction}
-                    disabled={selectedAction === "none" || isProcessing}
+                    disabled={selectedAction === "none" || isProcessing || Boolean(actionResult)}
                     className="w-full sm:w-auto"
                     variant={selectedAction === "remove_explicit" ? "destructive" : "default"}
                   >

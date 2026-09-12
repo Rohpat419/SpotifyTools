@@ -6,6 +6,12 @@
 
 # Environment variables
 *.env
+.env.*
+!.env.example
+.venv/
+node_modules/
+*.tsbuildinfo
+test-results/
 
 # IDE files
 .vscode/

@@ -66,6 +66,10 @@ Document debugging insights and mistakes here to avoid repeating them.
 
 ## Frontend
 
+### Runtime dependencies
+- Keep `react-dom` explicitly declared alongside a matching `react` version. Next.js uses it even without direct application imports.
+- Import tracing alone cannot identify framework, CSS, or build-tool dependencies; verify installation before accepting dependency cleanup.
+
 ### Environment Variables
 - Next.js requires `NEXT_PUBLIC_` prefix for client-side vars
 - Vite uses `VITE_` prefix
